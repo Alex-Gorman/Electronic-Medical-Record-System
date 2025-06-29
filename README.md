@@ -41,7 +41,9 @@ docker attach emr-frontend
 ```
 
 ### 🌐 6. Access the Application
+```bash
 http://localhost:3000
+```
 
 
 
