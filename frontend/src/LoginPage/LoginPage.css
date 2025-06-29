@@ -1,0 +1,152 @@
+/* ================================
+   Layout Container
+   ================================ */
+.main-container {
+  display: flex;
+  height: 100vh;
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+/* ================================
+   Left Panel (Intro Section)
+   ================================ */
+.left-panel {
+  width: 40%;
+  background-color: #5c1680; /* Deep purple tone for branding */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding-left: 50px;
+}
+
+.left-heading {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.left-text {
+  font-size: 1.2rem;
+}
+
+/* ================================
+   Right Panel (Login Section)
+   ================================ */
+.right-panel {
+  width: 60%;
+  background-color: #f8f8f8; /* Light neutral background */
+  display: flex;
+  flex-direction: column; /* Stack login-box and footer vertically */
+  justify-content: center;
+  align-items: center;
+  position: relative; /* Allows footer to be positioned absolutely */
+}
+
+/* ================================
+   Login Box (Form Container)
+   ================================ */
+.login-box {
+  width: 340px;
+  padding: 30px 20px;
+  background-color: white;
+  border: 1px solid #000;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Optional internal padding wrapper (not used currently) */
+.login-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0 10px;
+}
+
+/* ================================
+   Form Elements
+   ================================ */
+.input-label {
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  text-align: left;
+  margin: 0 0 4px 0;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* ================================
+   Submit Button Styling
+   ================================ */
+.login-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  background-color: #059669; /* EMR-style green */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: "Segoe UI", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.login-button:hover {
+  background-color: #047857; /* Slightly darker on hover */
+}
+
+/* ================================
+   Footer Text (Right Panel Bottom)
+   ================================ */
+.page-footer {
+  position: absolute;
+  bottom: 20px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #007bff; /* Blue for emphasis */
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* Optional blue footer text (e.g., link or secondary info) */
+.login-footer {
+  margin-top: 20px;
+  font-size: 0.8rem;
+  color: #007bff;
+}
+
+/* ================================
+   Error Message Styling
+   ================================ */
+.error-message {
+  color: red;
+  font-size: 0.85rem;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+
+
+
+
+
+
+
+
+
