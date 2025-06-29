@@ -1,0 +1,99 @@
+/* src/SearchPage/SearchPage.css */
+
+/* ---------------- Container Layout ---------------- */
+
+/* Main container for the search section */
+.search-container {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  background-color: #e0dcff;
+  font-family: Arial, sans-serif;
+  margin: 0;
+}
+
+/* ---------------- Header Styling ---------------- */
+
+/* Header bar at the top of the search panel */
+.search-header {
+  background-color: #ccccff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+}
+
+/* Title in the header */
+.search-header h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+/* Right-aligned help/about links */
+.header-links {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* ---------------- Search Form ---------------- */
+
+/* Container for form elements */
+.search-form {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px; /* spacing between form elements */
+}
+
+/* Common input and select styles */
+.search-form select,
+.search-form input,
+.search-form button {
+  font-size: 14px;
+  padding: 4px 8px;
+}
+
+/* Input field width for consistency */
+.search-form input {
+  width: 200px;
+}
+
+/* ---------------- Placeholder Section ---------------- */
+
+/* Placeholder for future demographic details */
+.demographic-placeholder {
+  margin-top: 30px;
+  text-align: right;
+  padding: 0 10px;
+}
+
+.demographic-placeholder h2 {
+  color: #0066cc;
+  font-weight: bold;
+}
+
+/* ---------------- Create Button ---------------- */
+
+/* Container for the 'Create Demographic' button */
+.create-container {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+/* Styled as a text link but functions as a button */
+.create-link {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 1.25rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+/* Hover effect for 'Create Demographic' */
+.create-link:hover {
+  color: black;
+  text-decoration: underline;
+}
+
