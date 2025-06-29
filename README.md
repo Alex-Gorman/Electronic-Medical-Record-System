@@ -17,10 +17,10 @@ git clone git@github.com:Alex-Gorman/Electronic-Medical-Record-System.git
 ```
 
 
-### 📁 2. Navigate to the Frontend Directory
+### 📁 2. Navigate to the Directory
 
 ```bash
-cd Electronic-Medical-Record-System/frontend
+cd Electronic-Medical-Record-System
 ```
 
 
