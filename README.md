@@ -1,30 +1,16 @@
-# Electronic-Medical-Record-System
+# 🏥 Electronic Medical Record System
 
-How to run my project.
+A modern web-based Electronic Medical Record (EMR) system built with React and Docker. This system provides a structured and efficient interface for managing patient data and medical records.
 
-1. 📥 Clone the Repository
+---
 
-   git clone git@github.com:Alex-Gorman/Electronic-Medical-Record-System.git
+## 🚀 How to Run the Project
 
+Follow the steps below to run the project locally using Docker.
 
-2. Navigate to the directory
+### 📥 1. Clone the Repository
 
-   cd Electronic-Medical-Record-System/frontend
+Clone the repository using SSH:
 
-
-3. 🐳 Run the Application with Docker
-
-  docker compose up --build
-
-
-4. Open a New Terminal Window
-
-
-5. 🔗 Attach to the Frontend Container
-
-   docker attach emr-frontend
-
-
-6. 🌐 Access the Application
-
-   http://localhost:3000
+```bash
+git clone git@github.com:Alex-Gorman/Electronic-Medical-Record-System.git
