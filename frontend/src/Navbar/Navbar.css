@@ -1,0 +1,46 @@
+/* src/Navbar/Navbar.css */
+
+/* Main navigation bar container */
+.oscar-navbar {
+  background-color: #007a6f; /* OSCAR green */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  font-family: Arial, sans-serif;
+}
+
+/* Left and right sections of the navbar */
+.navbar-left,
+.navbar-right {
+  display: flex;
+  gap: 12px; /* Spacing between nav items */
+}
+
+/* Shared link styles (buttons and anchor tags) */
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.2s ease;
+}
+
+/* Hover effect for links */
+.nav-link:hover {
+  background-color: #005f55; /* Darker green on hover */
+  border-radius: 4px;
+}
+
+/* Style for the active route */
+.nav-link.active {
+  font-weight: bold;
+  border-bottom: 2px solid white;
+}
+
+
