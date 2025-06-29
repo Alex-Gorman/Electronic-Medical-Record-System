@@ -1,0 +1,45 @@
+/* Center-align text inside the App component */
+.App {
+  text-align: center;
+}
+
+/* Style for the App logo */
+.App-logo {
+  height: 40vmin;
+  pointer-events: none; /* Prevents logo from capturing pointer events (clicks, hovers, etc.) */
+}
+
+/* Adds a spinning animation to the logo if the user has no motion preference */
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+/* Styles for the header section of the App */
+.App-header {
+  background-color: #282c34; /* Dark background */
+  min-height: 100vh;         /* Full viewport height */
+  display: flex;             /* Flexbox for layout */
+  flex-direction: column;    /* Stack children vertically */
+  align-items: center;       /* Center items horizontally */
+  justify-content: center;   /* Center items vertically */
+  font-size: calc(10px + 2vmin); /* Responsive font size */
+  color: white;              /* White text */
+}
+
+/* Link styling inside the App */
+.App-link {
+  color: #61dafb; /* Light blue color used by React */
+}
+
+/* Keyframes for rotating the App logo */
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
