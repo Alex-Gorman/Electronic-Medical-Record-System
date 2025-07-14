@@ -4,6 +4,7 @@ import Navbar from './Navbar/Navbar';
 import LoginPage from './LoginPage/LoginPage';
 import MainMenu from './MainMenu/MainMenu';
 import SearchPage from './SearchPage/SearchPage';
+import CreateDemographic from './CreateDemographic/CreateDemographic';
 
 /**
  * AppWrapper is a component that enables the use of React Router hooks.
@@ -12,8 +13,9 @@ import SearchPage from './SearchPage/SearchPage';
 function AppWrapper() {
   const location = useLocation();
 
-  /* Hide Navbar on the login and search popup pages */
-  const showNavbar = location.pathname !== '/' && location.pathname !== '/search-popup';
+  /* Hide navbar on login, popup search, and create-demographic pages */
+  const hideNavbarRoutes = ['/', '/search-popup', '/create-demographic'];
+  const showNavbar = !hideNavbarRoutes.includes(location.pathname);
 
   return (
     <div>
@@ -23,6 +25,7 @@ function AppWrapper() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/MainMenu" element={<MainMenu />} />
         <Route path="/search-popup" element={<SearchPage />} />
+        <Route path="/create-demographic" element={<CreateDemographic />} />
 
       </Routes>
     </div>
