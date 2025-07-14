@@ -43,7 +43,8 @@ function Navbar() {
                 className={`nav-link ${isActive ? 'active' : ''}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  window.open('/search-popup', 'PatientSearch', 'width=600,height=400');
+                  /* window.open('/search-popup', 'PatientSearch', 'width=600,height=400'); */
+                  window.open('/search-popup', 'PatientSearch', 'width=1000,height=800');
                 }}
               >
                 {item.label}
