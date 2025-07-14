@@ -20,6 +20,15 @@ const DEFAULT_USERS = [
   { username: 'gpaul', password: 'paul1234' },
 ];
 
+/* Insert default doctors */
+const defaultDoctors = [
+  ['Dr. Wong'],
+  ['Dr. Smith'],
+];
+
+const DEFAULT_PATIENTS = require('./defaultPatients');
+
+
 /**
  * Attempts to connect to the MySQL database with retry logic
  * Retries connection with a limited number of times if initial attempts fail
@@ -65,10 +74,29 @@ function initializeDatabase(connection) {
       password VARCHAR(255) NOT NULL
     )`,
     `CREATE TABLE IF NOT EXISTS patients (
-      ID INT AUTO_INCREMENT PRIMARY KEY,
-      Topic VARCHAR(255) NOT NULL,
-      Data TEXT
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      lastname VARCHAR(100),
+      firstname VARCHAR(100),
+      preferredname VARCHAR(100),
+      address TEXT,
+      city VARCHAR(100),
+      postalcode VARCHAR(20),
+      province VARCHAR(100),
+      homephone VARCHAR(20),
+      workphone VARCHAR(20),
+      cellphone VARCHAR(20),
+      email VARCHAR(150),
+      dob DATE,
+      sex VARCHAR(10),
+      healthinsurance_number VARCHAR(50),
+      healthinsurance_version_code VARCHAR(10),
+      patient_status ENUM('active', 'not enrolled') DEFAULT 'active',
+      family_physician VARCHAR(150)
     )`,
+    `CREATE TABLE IF NOT EXISTS doctors (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(150) NOT NULL
+    )`
   ];
 
   queries.forEach((query) => {
@@ -89,8 +117,37 @@ function initializeDatabase(connection) {
       }
     );
   });
-
   console.log('✅ Default users inserted (if not already present).');
+
+  /* Insert sample patient records into 'patients' table */
+  DEFAULT_PATIENTS.forEach((patient) => {
+    const fields = Object.keys(patient);
+    const values = Object.values(patient);
+
+    const placeholders = fields.map(() => '?').join(', ');
+    const query = `INSERT IGNORE INTO patients (${fields.join(', ')}) VALUES (${placeholders})`;
+
+    connection.query(query, values, (err) => {
+      if (err) {
+        console.error(`❌ Failed to insert patient ${patient.firstname} ${patient.lastname}:`, err.message);
+      }
+    });
+  });
+  console.log('✅ Default patients inserted (if not already present).');
+
+  /* Insert default doctors into 'doctors' table */
+  connection.query(
+    'INSERT IGNORE INTO doctors (name) VALUES ?',
+    [defaultDoctors],
+    (err) => {
+      if (err) {
+        console.error('❌ Failed to insert doctors:', err.message);
+      } else {
+        console.log('✅ Default doctors inserted (if not already present).');
+      }
+    }
+  );
+  /* console.log('✅ Default doctor inserted (if not already present).'); */
 }
 
 /**
@@ -133,6 +190,79 @@ function startServer(connection) {
       }
     );
   });
+
+  /**
+   * GET /patients/search
+   * Supports searching by full name: "Last, First" or just "Last"
+   */
+  app.get('/patients/search', (req, res) => {
+    const keyword = req.query.keyword;
+    if (!keyword) return res.status(400).json({ error: 'Keyword required' });
+
+    // Split "Smith, John" into parts
+    const parts = keyword.split(',').map(part => part.trim());
+
+    let query = '';
+    let params = [];
+
+    if (parts.length === 2) {
+      // If user entered "Lastname, Firstname"
+      query = `
+        SELECT * FROM patients
+        WHERE lastname LIKE ? AND firstname LIKE ?
+      `;
+      params = [`%${parts[0]}%`, `%${parts[1]}%`];
+    } else {
+      // Otherwise search by any name field (like before)
+      query = `
+        SELECT * FROM patients
+        WHERE lastname LIKE ? OR firstname LIKE ? OR preferredname LIKE ?
+      `;
+      params = [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`];
+    }
+
+    connection.query(query, params, (err, results) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json(results);
+    });
+  });
+
+  /**
+   * GET /doctors
+   * Supports getting all the doctors in the doctors table
+   */ 
+  app.get('/doctors', (req, res) => {
+    connection.query('SELECT name FROM doctors', (err, results) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      const doctorNames = results.map((row) => row.name);
+      res.json(doctorNames);
+    });
+  });
+
+  /**
+   * POST /patients
+   * Inserts a new patient record into the patients table
+   */
+  app.post('/patients', (req, res) => {
+    const patient = req.body;
+
+    // Build dynamic query
+    const fields = Object.keys(patient);
+    const values = Object.values(patient);
+    const placeholders = fields.map(() => '?').join(', ');
+
+    const query = `INSERT INTO patients (${fields.join(', ')}) VALUES (${placeholders})`;
+
+    connection.query(query, values, (err, result) => {
+      if (err) {
+        console.error('❌ Failed to insert patient:', err.message);
+        return res.status(500).json({ error: 'Failed to insert patient' });
+      }
+      res.status(201).json({ message: 'Patient added successfully', id: result.insertId });
+    });
+  });
+
+
 
   app.listen(PORT, HOST, () => {
     console.log(`🚀 Server is running at http://${HOST}:${PORT}`);
