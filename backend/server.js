@@ -54,8 +54,7 @@ function connectWithRetry(retries = 10, delay = 2000) {
       }
       return;
     }
-
-    console.log('✅ Connected to MySQL.');
+    console.log('Connected to MySQL.');
     startServer(connection);
   });
 }
@@ -67,6 +66,8 @@ function connectWithRetry(retries = 10, delay = 2000) {
  * @param {mysql.Connection} connection - The MySQL connection instance
  */ 
 function initializeDatabase(connection) {
+
+  /* Tables to be created */
   const queries = [
     `CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -99,25 +100,30 @@ function initializeDatabase(connection) {
     )`
   ];
 
+
+
+  /* For each query create the table if it doesn't exist */
   queries.forEach((query) => {
     connection.query(query, (err) => {
       if (err) throw err;
     });
   });
+  console.log('Tables initialized.');
 
-  console.log('✅ Tables initialized.');
 
-  /* Insert the user info into the 'users' table */
-  DEFAULT_USERS.forEach(({ username, password }) => {
+
+  /* Insert the default user info into the 'users' table */
+  DEFAULT_USERS.forEach(({ username, password}) => {
     connection.query(
       'INSERT IGNORE INTO users (username, password) VALUES (?, ?)',
       [username, password],
       (err) => {
-        if (err) console.error(`❌ Failed to insert user ${username}:`, err.message);
-      }
-    );
+        if (err) console.error(`Failed to insert user ${username}:`, err.message);
+      });
   });
-  console.log('✅ Default users inserted (if not already present).');
+  console.log('Default users inserted (if not already present).');
+
+
 
   /* Insert sample patient records into 'patients' table */
   DEFAULT_PATIENTS.forEach((patient) => {
@@ -129,11 +135,13 @@ function initializeDatabase(connection) {
 
     connection.query(query, values, (err) => {
       if (err) {
-        console.error(`❌ Failed to insert patient ${patient.firstname} ${patient.lastname}:`, err.message);
+        console.error(`Failed to insert patient ${patient.firstname} ${patient.lastname}:`, err.message);
       }
     });
   });
-  console.log('✅ Default patients inserted (if not already present).');
+  console.log('Default patients inserted (if not already present).');
+
+
 
   /* Insert default doctors into 'doctors' table */
   connection.query(
@@ -141,13 +149,12 @@ function initializeDatabase(connection) {
     [defaultDoctors],
     (err) => {
       if (err) {
-        console.error('❌ Failed to insert doctors:', err.message);
+        console.error('Failed to insert doctors:', err.message);
       } else {
-        console.log('✅ Default doctors inserted (if not already present).');
+        console.log('Default doctors inserted (if not already present).');
       }
     }
   );
-  /* console.log('✅ Default doctor inserted (if not already present).'); */
 }
 
 /**
@@ -168,97 +175,188 @@ function startServer(connection) {
 
   initializeDatabase(connection);
 
+
+
   /**
    * POST /login
-   * Verifies if the provided username and password exist in the database table users
-   * Responds with a success message or error status
-   */ 
-  app.post('/login', (req, res) => {
-    const { username, password } = req.body;
+   * Verifies if the user provided username & password exist the database table users
+   * Responds with a success message or an error status
+   */
+   app.post('/login', (req, res) => {
 
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
-    }
+    const username = req.body.username;
+    const password = req.body.password;
 
-    connection.query(
-      'SELECT * FROM users WHERE username = ? AND password = ?',
-      [username, password],
-      (err, results) => {
-        if (err) return res.status(500).json({ error: 'Server error' });
-        if (results.length > 0) return res.status(200).json({ message: 'Login successful' });
-        return res.status(401).json({ error: 'Invalid username or password' });
-      }
-    );
-  });
+    /* If no username or password, return error message */
+    if (!username || !password) return res.status(400).json({ error: "username and password required" });
+
+    /* SQL query */
+    const query = 'SELECT * FROM users WHERE username = ? AND password = ?';
+
+    params = [username, password];
+
+    connection.query(query, params, (err, results) => {
+      if (err) return res.status(500).json({ error: 'Server error' });
+      if (results.length > 0) return res.status(200).json({ message: 'Login Successful' });
+      return res.status(401).json({ error: 'Invalid username or password' });
+    });
+   }); 
+
+
 
   /**
    * GET /patients/search
    * Supports searching by full name: "Last, First" or just "Last"
+   * Supports searching by phone number
    */
   app.get('/patients/search', (req, res) => {
+
+    /* value to search */
     const keyword = req.query.keyword;
+
+    /* search mode, default to search name if no mode given */
+    const mode = req.query.mode || 'search_name';
+
+    /* If no keyword given return error message */
     if (!keyword) return res.status(400).json({ error: 'Keyword required' });
 
-    // Split "Smith, John" into parts
-    const parts = keyword.split(',').map(part => part.trim());
-
+    /* Where the SQL query will be stored */
     let query = '';
+
+    /* Holds parameter values that will be safely inserted into the query */
     let params = [];
 
-    if (parts.length === 2) {
-      // If user entered "Lastname, Firstname"
-      query = `
+    /* Search by mode type */
+    switch (mode) {
+      case 'search_name': {
+
+          /* Split "Smith, John" into parts */
+          const parts = keyword.split(',').map(part => part.trim());
+
+          /* Check to see if user entered "Lastname, Firstname" */
+          if (parts.length == 2) {
+            query = `
+              SELECT * FROM patients
+              WHERE lastname LIKE ? AND firstname LIKE ?
+            `;
+            params = [`%${parts[0]}`, `%${parts[1]}`];
+
+
+          /* Otherwise check any name field */  
+          } else {
+            query = `
+              SELECT * FROM patients
+              WHERE lastname LIKE ? OR firstname LIKE ? OR preferredname
+            `;
+            params = [`%${keyword}`, `%${keyword}`, `%${keyword}`];
+          }
+          break;
+      }
+
+      case 'search_phone': {
+        query = `
+          SELECT * FROM patients
+          WHERE homephone LIKE ? OR cellphone LIKE ? OR workphone LIKE ?
+        `;
+
+        params = [`%${keyword}`, `%${keyword}`, `%${keyword}`];
+        break;
+      }
+
+      case 'search_dob': {
+        query = `
         SELECT * FROM patients
-        WHERE lastname LIKE ? AND firstname LIKE ?
-      `;
-      params = [`%${parts[0]}%`, `%${parts[1]}%`];
-    } else {
-      // Otherwise search by any name field (like before)
-      query = `
+        WHERE dob LIKE ?
+        `;
+
+        params = [`%${keyword}`];
+        break;
+      }
+
+      case 'search_health_number': {
+        query = `
         SELECT * FROM patients
-        WHERE lastname LIKE ? OR firstname LIKE ? OR preferredname LIKE ?
-      `;
-      params = [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`];
+        WHERE healthinsurance_number LIKE ?
+        `;
+        params = [`%${keyword}`];
+        break;
+      }
+
+      case 'search_email': {
+        query = `
+        SELECT * FROM patients 
+        WHERE email LIKE ?
+        `;
+        params = [`%${keyword}`];
+        break;
+      }
+
+      case 'search_address': {
+        query = `
+        SELECT * FROM patients
+        WHERE address LIKE ?
+        `;
+        params = [`%${keyword}`];
+        break;
+      }
+
+      default:
+        return res.status(400).json({error: "Invalid search mode"});
     }
 
     connection.query(query, params, (err, results) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
+      if (err) return res.status(400).json({ error: 'Database error'});
       res.json(results);
     });
   });
 
+
+
   /**
    * GET /doctors
-   * Supports getting all the doctors in the doctors table
-   */ 
+   * Supports retrieving all the doctors names in the doctors table
+   */
   app.get('/doctors', (req, res) => {
-    connection.query('SELECT name FROM doctors', (err, results) => {
+
+    /* SQL query */
+    const query = 'SELECT name FROM doctors';
+
+    connection.query(query, (err, results) => {
       if (err) return res.status(500).json({ error: 'Database error' });
       const doctorNames = results.map((row) => row.name);
       res.json(doctorNames);
     });
   });
 
+
+
   /**
    * POST /patients
    * Inserts a new patient record into the patients table
-   */
+   */ 
   app.post('/patients', (req, res) => {
+
+    /* Patient info to be stored */
     const patient = req.body;
 
-    // Build dynamic query
+    /* An array of all the field names from the patient object */
     const fields = Object.keys(patient);
+
+    /* An array of all the corresponding values from the patient object */
     const values = Object.values(patient);
+
+    /* Placeholders for the parameterized SQL Query */
     const placeholders = fields.map(() => '?').join(', ');
 
+    /* SQL Query to insert the patient values into the patients table */
     const query = `INSERT INTO patients (${fields.join(', ')}) VALUES (${placeholders})`;
 
-    connection.query(query, values, (err, result) => {
+    connection.query(query, (err, results) => {
       if (err) {
-        console.error('❌ Failed to insert patient:', err.message);
-        return res.status(500).json({ error: 'Failed to insert patient' });
+        console.error('Failed to insert patient:', err.message);
+        return res.status(500).json({ error: 'Failed to insert patient:' });
       }
-      res.status(201).json({ message: 'Patient added successfully', id: result.insertId });
+      res.status(201).json({ message: 'Patient added successfully', id: result.insertId});
     });
   });
 
