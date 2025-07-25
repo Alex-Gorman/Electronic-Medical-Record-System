@@ -13,66 +13,19 @@
 }
 
 .schedule-columns {
-  display: flex;
-  justify-content: space-around;
-  margin: 20px 0;
-  padding: 0 20px;
+  display: flex; /* Flexbox layout to arange the children elements in a row */
+  justify-content: center; /* Center the children elements horizontally within the container */
+  margin: 40px; /* Add horizontal spacing between the children elements */
+  padding: 20px; /* Add space inside the container on all sides */
 }
 
 .schedule-column {
   width: 45%;
-  background-color: #fdfdfd;
+  /* background-color: #fdfdfd; */
+  background-color: #fff;
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 10px;
-}
-
-/* ========== Form Styles ========== */
-
-.post-form {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.form-group {
-  width: 100%;
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-label {
-  font-size: 1.2rem;
-  font-weight: bold;
-  display: block;
-  margin-bottom: 6px;
-}
-
-.input-field {
-  width: 100%;
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-textarea {
-  resize: vertical;
-}
-
-.submit-button {
-  background-color: #007bff;
-  color: #fff;
-  font-size: 1rem;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.submit-button:hover {
-  background-color: #0056b3;
 }
 
 /* ========== Time Slots ========== */
@@ -187,4 +140,111 @@ textarea {
   padding: 2px 6px;
   font-size: 12px;
 }
+
+.schedule-wrapper {
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.schedule-table th,
+.schedule-table td {
+  border: 1px solid #ddd;
+  padding: 6px 12px;
+  text-align: center;
+}
+
+.schedule-table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.time-cell {
+  font-weight: bold;
+  background-color: #fafafa;
+}
+
+.slot-cell {
+  background-color: #ffffff;
+}
+
+/* Styles the clickable timeslots */
+.clickable {
+  cursor: pointer; /* Changes the cursor to a pointer to show its clickable */
+  color: blue; /* Sets the text colour to blue */
+  text-decoration: underline; /* Underlines the text to show its interactive */
+}
+
+/* Style the darkened background the popup window */
+.popup-background {
+  position: fixed; /* Keeps the popup window in a fixed position on the screen */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4); /* Make background semi-transparent black */
+  display: flex; /* Use flexbox for popup window */
+  align-items: center; /* Vertically center popup window */
+  justify-content: center; /* Horizontally center popup window */
+  z-index: 999; /* Ensure popup window appears on top of other content */
+}
+
+/* Style the popup window */
+.popup {
+  background-color: white; /* Set popup window background to white */
+  padding: 20px; /* Add spacing inside popup window */
+  border-radius: 8px; /* Round the borders of popup window */
+  width: 300px; /* Set popup window width */
+}
+
+.popup input {
+  width: 100%; /* Make input span full width of popup window */
+  padding: 6px; /* Add padding inside input field */
+  margin-top: 10px; /* Add spacing between buttons */
+}
+
+/* Style the button inside the popup window */
+.popup-buttons {
+  display: flex; /* Use flexbox to layout the buttons */
+  justify-content: flex-end; /* Align the buttons to the right side */
+  margin-top: 15px; /* Adds space above the button row */
+  gap: 10px; /* Add spacing between the buttons */
+}
+
+/* Style the cell of the booked appointments with specific background colours */
+.booked-cell {
+  background-color: #fffcc4; /* Light brown */
+}
+
+.present-cell {
+  background-color: #ffffff; /* White */
+}
+
+.being_seen-cell {
+  background-color: #1df704; /* Light neon green */
+}
+
+.finished-cell {
+  background-color: #04d1fd; /* Blue */
+}
+
+.missed-cell {
+  background-color: #cccccc; /* Light grey */
+}
+
+
+
+
+
+
+
+
+
+
 
