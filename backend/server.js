@@ -97,6 +97,19 @@ function initializeDatabase(connection) {
     `CREATE TABLE IF NOT EXISTS doctors (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(150) NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS appointments (
+      id SERIAL PRIMARY KEY,
+      patient_id INT NOT NULL,
+      provider_id INT NOT NULL,
+      appointment_date DATE NOT NULL,
+      start_time TIME NOT NULL,
+      duration_minutes INT NOT NULL,
+      reason TEXT,
+      status ENUM('booked', 'present', 'being_seen', 'finished', 'missed') DEFAULT 'booked',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (patient_id) REFERENCES patients(ID),
+      FOREIGN KEY (provider_id) REFERENCES doctors(ID)
     )`
   ];
 
@@ -360,6 +373,86 @@ function startServer(connection) {
     });
   });
 
+  /**
+   * POST /appointments
+   * Inserts booked appointment details form the frontend into the appointments table
+   */
+  app.post('/appointments', (req, res) => {
+    const { patientId, providerId, date, time, duration, reason, status } = req.body;
+
+    /* SQL Query to insert the appointment info into the appointments table */
+    const query = `INSERT INTO appointments
+      (patient_id, provider_id, appointment_date, start_time, duration_minutes, reason, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`;  
+
+    values = [patientId, providerId, date, time, duration, reason, status || 'booked'];
+
+    connection.query(query, values, (err, results) => {
+      if (err) {
+        console.error('Failed to insert appointment info:', err.message);
+        return res.status(500).json({ error: 'Failed to insert appointment'});
+      }
+      res.status(201).json({ message: 'Appointment added successfully'});
+    });
+
+  });
+
+  /**
+   * GET /appointments
+   * Returns all appointments for a given date
+   */
+  app.get('/appointments', (req, res) => {
+    const { date } = req.query;
+
+    if (!date) return res.status(400).json({ error: 'Date is required' });
+
+    const query = `
+      SELECT
+        a.id, a.start_time, a.duration_minutes, a.reason, a.status,
+        p.firstname, p.lastname,
+        d.name as provider_name
+      FROM appointments a
+      JOIN patients p ON a.patient_id = p.id
+      JOIN doctors d ON a.provider_id = d.id
+      WHERE appointment_date = ?
+      `;
+    
+    connection.query(query, [date], (err, results) => {
+      if (err) {
+        console.error('Failed to fetch appointments:', err.message);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json(results);
+    });
+      
+  });
+
+  /**
+   * PUT /appointments/:id/status
+   * Updates the status of an appointment
+   */
+  app.put('/appointments/:id/status', (req, res) => {
+    
+    const id = req.body.id;
+    const status = req.body.status;
+
+    if (!status) return res.status(400).json({ error: "Status is required "});
+
+    const validStatuses = ['booked', 'present', 'being_seen', 'finished', 'missed'];
+
+    if (!validStatuses.includes(status)) return res.status(400).json({ error: "Valid status is required "});
+
+    const query = `UPDATE appointments SET status = ? WHERE id = ?`;
+
+    connection.query(query, [status, id], (err, results) => {
+      if (err) {
+        console.error('Failed to update appointment status', err.message);
+        return res.status(500).json({ error: 'Database error'});
+      }
+
+      res.status(200).json({message: "Appointment status updated successfuly"});
+    })
+  });
 
 
   app.listen(PORT, HOST, () => {
