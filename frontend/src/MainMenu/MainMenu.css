@@ -142,7 +142,7 @@
 }
 
 .schedule-wrapper {
-  padding: 20px;
+  /* padding: 2px; */ /* Padding around the timesheet */
   overflow-x: auto;
 }
 
@@ -160,25 +160,28 @@
   text-align: center;
 }
 
+/* The header/titles of the timesheet table */
 .schedule-table th {
-  background-color: #f5f5f5;
+  background-color: #f0ecec;
   font-weight: bold;
 }
 
+/* The time cells in the timesheet */
 .time-cell {
   font-weight: bold;
-  background-color: #fafafa;
+  background-color: #f0ecec;
+  /* color: black; */
 }
 
+/* Hovering over the time cells in the timesheet */
+.time-cell:hover {
+  color: #21773b;
+  cursor: pointer;
+}
+
+/* The appointment cells in the timesheet */
 .slot-cell {
-  background-color: #ffffff;
-}
-
-/* Styles the clickable timeslots */
-.clickable {
-  cursor: pointer; /* Changes the cursor to a pointer to show its clickable */
-  color: blue; /* Sets the text colour to blue */
-  text-decoration: underline; /* Underlines the text to show its interactive */
+  background-color: #f0ecec;
 }
 
 /* Style the darkened background the popup window */
@@ -236,6 +239,31 @@
 
 .missed-cell {
   background-color: #cccccc; /* Light grey */
+}
+
+/* ========== Time Column ========== */
+
+/* Time columns */
+.time-col {
+  /* Make the columns shrink to only the width of the time text */
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* ========== Provider/Appointment Column ========== */
+
+/* Provider columns */
+.provider-col {
+  /* Force the provider columns to share the remaining space equally */
+  width: 49.5%;
+}
+
+/* ========== Appointment Booking Cell ========== */
+.appt-info {
+  /* Left align the appointment info and patient info in the booking cell */
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 

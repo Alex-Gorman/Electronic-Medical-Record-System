@@ -34,6 +34,24 @@ function MainMenu() {
   /* Store the selected provider when booking an appt */
   const [selectedProviderId, setSelectedProviderId] = useState(null);
 
+  /* Track the selected appointment */
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
+  /* Track the appointment reason */
+  const [appointmentReason, setAppointmentReason] = useState('');
+
+  /* Reset booking state values */
+  const resetBookingState = () => {
+    setSelectedTime(null);
+    setShowBookingWindow(false);
+    setPatientName('');
+    setSearchResults([]);
+    setSelectedPatient(null);
+    setSelectedProviderId(null);
+    setSelectedAppointment(null);
+    setAppointmentReason('');
+  }
+
 
   /* Fetch the list of appointments whenever the date changes */
   const fetchAppointments = async () => {
@@ -55,6 +73,7 @@ function MainMenu() {
    * Handle the user click of the time slot
    */
   const handleTimeClick = (time, providerId) => {
+    resetBookingState();
     setSelectedTime(time);
     setSelectedProviderId(providerId);
     setShowBookingWindow(true);
@@ -71,30 +90,66 @@ function MainMenu() {
       return;
     }
 
+    /* Fetch fresh appointments directly from backend */
+    let freshAppointments = [];
+    try {
+      const response = await fetch(`http://localhost:3002/appointments?date=${currentDate}`);
+      freshAppointments = await response.json();
+    } catch (error) {
+      console.error('Error fetching appointments for conflict check:', error);
+      alert('Unable to verify appointment conflicts');
+      return;
+    }
+
     /* Get the raw minutes since midnight, will make it easier to compare times */
     const selectedTimeRawMinutes = (parseInt(selectedTime.split(':')[0]) * 60) + parseInt(selectedTime.split(':')[1]);
 
-    /* Check for time overlap */
-    const ifConflict = appointments.some(appt => {
+    let isConflict = false;
 
+    for (const appt of freshAppointments) {
+
+      /* Appointment start for current appt being checked */
       const apptStart = (parseInt(appt.start_time.slice(0, 2)) * 60) + parseInt(appt.start_time.slice(3, 5));
-      const apptEnd = apptStart + appt.duration;
 
-      const selectedEnd = selectedTimeRawMinutes + duration;
+      /* Appointment end for current appt being checked */
+      const apptEnd = apptStart + appt.duration_minutes;
 
-      // if ((selectedEnd < apptStart) || (selectedTimeRawMinutes > apptEnd)) return false
-      // else return true
+      /* Appointment start for appointment trying to be booked */
+      const selectedStart = selectedTimeRawMinutes;
 
-      return selectedTimeRawMinutes < apptEnd && selectedEnd > apptStart;
+      /* Appointment end for appointment trying to be booked */
+      const selectedEnd = selectedStart + duration;
 
+      if ((selectedStart > apptStart) && (selectedStart < apptEnd)) {
+        console.log("Time conflict scenario 1");
+        isConflict = true;
+      }
 
+      if ((selectedEnd > apptStart) && (selectedEnd < apptEnd)) {
+        console.log("Time conflict scenario 2");
+        isConflict = true;
+      }
 
-    });
+      if ((selectedStart < apptStart) && (selectedEnd > apptEnd)) {
+        console.log("Time conflict scenario 3");
+        isConflict = true;
+      }
 
-    if (ifConflict) {
+      if ((selectedStart > apptStart) && (selectedEnd < apptEnd)) {
+        console.log("Time conflict scenario 4");
+        isConflict = true;
+      }
+    }
+
+    console.log("isConflict? : "+isConflict);
+
+    if (isConflict) {
       alert('This time slot is already booked for the selected provider');
       return;
     }
+
+    /* If the appointment reason is empty, just make the default reason for the appt a 'General Consult' */
+    if (appointmentReason === '') setAppointmentReason('General Consult');
 
     const appointmentData = {
       patientId: selectedPatient.id,
@@ -102,7 +157,7 @@ function MainMenu() {
       date: '2025-06-27', /* Hardcode date for now, make dynamically later */
       time: selectedTime,
       duration: duration,
-      reason: 'General Consult', /* Hardcode for now */
+      reason: appointmentReason,
       status: 'booked' /* Initial status is the patient is just booked */
     };
 
@@ -128,10 +183,7 @@ function MainMenu() {
         await fetchAppointments();
 
         /* Clear all the current booking info in the fields */
-        setShowBookingWindow(false);
-        setPatientName('');
-        setSelectedPatient(null);
-        setSearchResults([]);
+        resetBookingState();
       }
 
     } catch (error) {
@@ -156,9 +208,10 @@ function MainMenu() {
       const response = await fetch(`http://localhost:3002/patients/search?keyword=${encodeURIComponent(keyword)}&mode=search_name`);
       const data = await response.json();
       console.log('Search API response:', data);
-      setSearchResults(data);
+      setSearchResults(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Search failed:', error);
+      setSearchResults([]);
     }
   };
 
@@ -203,6 +256,44 @@ function MainMenu() {
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Error updating appointment status');
+    }
+  };
+
+  /**
+   * Handle deleting an appointment after clicking on a patients name on the timesheet
+   */
+  const handleDeleteAppointment = async (apptId) => {
+
+    /* Remove the selected appointment and set it to no selected appt (null) */
+    setSelectedAppointment(null);
+
+    try {
+      const response = await fetch(`http://localhost:3002/appointments/${apptId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id : apptId})
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error(result.error);
+        alert('Failed to delete appointment');
+      } else {
+        console.log('Deleted appointment');
+      }
+
+      /* Clear all the current booking info in the fields */
+      resetBookingState();
+
+      /* Refresh the appointment list */
+      await fetchAppointments();
+
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      alert('Error deleting appointment');
     }
   };
 
@@ -279,21 +370,40 @@ function MainMenu() {
                 style={{ verticalAlign: 'middle'}}
               >
                 <strong>
-                  <span
-                    className="folder-icon"
-                    onClick={() => handleStatusClick(appt.id, appt.status)}
-                    style={{ cursor: 'pointer', marginRight: '5px'}}
-                  >
-                    📁
-                  </span>
-                  {appt.firstname} {appt.lastname} | {appt.reason}
+                  <div className="appt-info">
+                    <span
+                      className="folder-icon"
+                      onClick={() => handleStatusClick(appt.id, appt.status)}
+                      style={{ cursor: 'pointer', marginRight: '5px'}}
+                    >
+                      📁
+                    </span>
+
+                    <span
+                      className="patient-name"
+                      onClick={() => {
+                        setSelectedTime(appt.start_time.slice(0,5));
+                        setSelectedProviderId(appt.provider_id);
+                        setSelectedPatient({
+                          id: appt.patient_id,
+                          firstname: appt.firstname,
+                          lastname: appt.lastname,
+                        });
+                        setSelectedAppointment(appt);
+                        setShowBookingWindow(true);
+                      }}
+                      style = {{ cursor: 'pointer' }}
+                    >
+                      {appt.firstname} {appt.lastname} | E | -B | M | Rx | {appt.reason}
+                    </span>
+                  </div>
                 </strong>
               </td>
             );
           } else {
               /* No appt for Dr. Wong at this time */
               rowCells.push(
-                <td key={`provider1-${time}`} className="slot-cell">-</td>
+                <td key={`provider1-${time}`} className="slot-cell"></td>
               )
           }
         }
@@ -347,21 +457,40 @@ function MainMenu() {
                 style={{ verticalAlign: 'middle'}}
               >
                 <strong>
-                  <span
-                    className="folder-icon"
-                    onClick={() => handleStatusClick(appt.id, appt.status)}
-                    style={{ cursor: 'pointer', marginRight: '5px'}}
-                  >
-                    📁
-                  </span>
-                  {appt.firstname} {appt.lastname} | {appt.reason}
+                  <div className="appt-info">
+                    <span
+                      className="folder-icon"
+                      onClick={() => handleStatusClick(appt.id, appt.status)}
+                      style={{ cursor: 'pointer', marginRight: '5px'}}
+                    >
+                      📁
+                    </span>
+
+                    <span
+                      className="patient-name"
+                      onClick={() => {
+                        setSelectedTime(appt.start_time.slice(0,5));
+                        setSelectedProviderId(appt.provider_id);
+                        setSelectedPatient({
+                          id: appt.patient_id,
+                          firstname: appt.firstname,
+                          lastname: appt.lastname,
+                        });
+                        setSelectedAppointment(appt);
+                        setShowBookingWindow(true);
+                      }}
+                      style = {{ cursor: 'pointer' }}
+                    >
+                      {appt.firstname} {appt.lastname} | E | -B | M | Rx | {appt.reason}
+                    </span>
+                  </div>  
                 </strong>
               </td>
             );
           } else {
               /* No appt for Dr. Smith at this time */
               rowCells.push(
-                <td key={`provider2-${time}`} className="slot-cell">-</td>
+                <td key={`provider2-${time}`} className="slot-cell"></td>
               )
           }
         }
@@ -374,75 +503,6 @@ function MainMenu() {
     /* Return all the table generated rows */
     return rows;
   };  
-
-
-
-  // /**
-  //  * Generate the 5 minute time slots from 7:00 AM to 23:55 PM for the schedule on given day on the UI
-  //  * Also generate the appointment if they exist with the correct pt info
-  //  */
-  // const generateTimeRows = () => {
-  //   const rows = [];
-
-  //   for (let hour = 7; hour <= 23; hour++) {
-  //     for (let min = 0; min <= 55; min+=5) {
-  //       /* format the hour and minute as a string (HH:MM) */
-  //       const time = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
-        
-  //       const provider1Appt = appointments.find(appt => appt.start_time.slice(0, 5) === time && appt.provider_name === 'Dr. Wong');
-  //       const provider2Appt = appointments.find(appt => appt.start_time.slice(0, 5) === time && appt.provider_name === 'Dr. Smith');
-        
-  //       rows.push(
-  //         <tr key={`${hour}-${min}`}>
-  //           {/* Time Column Left */}
-  //           <td className = "time-cell clickable" onClick={() => handleTimeClick(time)}>{time}</td>
-
-  //           {/* 1st Doctor Provider Slot */}
-  //           <td className={`slot-cell ${provider1Appt ? `${provider1Appt.status}-cell` : ''}`}>
-  //             {provider1Appt ? (
-  //               <strong>
-  //                 <span
-  //                   className="folder-icon"
-  //                   onClick={() => handleStatusClick(provider1Appt.id, provider1Appt.status)}
-  //                   style={{ cursor: 'pointer', marginRight: '5px' }}
-  //                 >
-  //                   📁
-  //                 </span>
-                  
-  //                 {provider1Appt.firstname} {provider1Appt.lastname} | {provider1Appt.reason}
-                  
-  //               </strong>): '-'}
-  //           </td>
-
-  //           {/* Time Column Right */}
-  //           <td className = "time-cell clickable" onClick={() => handleTimeClick(time)}>{time}</td>
-
-  //           {/* 2nd Doctor Provider Slot */}
-  //           <td className={`slot-cell ${provider2Appt ? `${provider2Appt.status}-cell` : ''}`}>
-  //             {provider2Appt ? (
-  //               <strong>
-  //                 <span
-  //                   className="folder-icon"
-  //                   onClick={() => handleStatusClick(provider2Appt.id, provider2Appt.status)}
-  //                   style={{ cursor: 'pointer', marginRight: '5px' }}
-  //                 >
-  //                   📁
-  //                 </span>
-  //                 {provider2Appt.firstname} {provider2Appt.lastname} | {provider2Appt.reason}
-                
-  //               </strong>) : '-'}
-  //           </td>
-
-  //         </tr>
-  //       );
-
-  //     }
-  //   }
-  //   return rows;
-  // }
-
-
-
 
   return (
     <div>
@@ -486,10 +546,10 @@ function MainMenu() {
         <table className="schedule-table">
           <thead>
             <tr>
-              <th>Time</th>
-              <th>Provider 1</th>
-              <th>Time</th>
-              <th>Provider 2</th>
+              <th className="time-col">Time</th>
+              <th className="provider-col">Provider 1</th>
+              <th className="time-col">Time</th>
+              <th className="provider-col">Provider 2</th>
             </tr>
           </thead>
           <tbody>{generateTimeRows()}</tbody>
@@ -531,9 +591,21 @@ function MainMenu() {
                 </li>
               ))}
             </ul>
+            <label>
+              Reason:
+              <input
+                type="text"
+                value={appointmentReason}
+                onChange={(e) => setAppointmentReason(e.target.value)}
+                placeholder='Give reason for appointment'
+              />
+            </label>
             <div className="popup-buttons">
               <button onClick={() => handleBookAppointment()}>Book</button>
               <button onClick={() => setShowBookingWindow(false)}>Cancel</button>
+              {selectedAppointment && (
+                <button onClick={() => handleDeleteAppointment(selectedAppointment.id)}>Delete</button>
+              )}
             </div>
 
           </div>
