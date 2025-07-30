@@ -408,7 +408,7 @@ function startServer(connection) {
 
     const query = `
       SELECT
-        a.id, a.start_time, a.duration_minutes, a.reason, a.status,
+        a.id, a.start_time, a.duration_minutes, a.reason, a.status, a.patient_id,
         p.firstname, p.lastname,
         d.name as provider_name
       FROM appointments a
@@ -452,6 +452,31 @@ function startServer(connection) {
 
       res.status(200).json({message: "Appointment status updated successfuly"});
     })
+  });
+
+  /**
+   * DELETE /appointments/:id
+   * Deletes an appt with the given appt id
+   */
+  app.delete('/appointments/:id', (req, res) => {
+    const apptId = req.params.id;
+
+    if (!apptId) return res.status(400).json({ error: "Appt id is required "});
+
+    const query = `DELETE FROM appointments WHERE id = ?`;
+
+    connection.query(query, [apptId], (err, results) => {
+      if (err) {
+        console.error('Failed to delete appointment', err.message);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: 'Appointment not found'});
+      }
+
+      res.status(200).json({message: "Appointment has been deleted sucessfully"});
+    });
   });
 
 
