@@ -57,6 +57,7 @@ function MainMenu() {
     };
   }, []);
 
+  
   /* Reset booking state values */
   const resetBookingState = () => {
     setSelectedTime(null);
