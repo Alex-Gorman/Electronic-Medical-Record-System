@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './MainMenu.css';
+import AppointmentFormPopup from '../Components/AppointmentFormPopup';
 
 /**
  * MainMenu component for rendering the primary layout and UI elements.
@@ -40,6 +41,22 @@ function MainMenu() {
   /* Track the appointment reason */
   const [appointmentReason, setAppointmentReason] = useState('');
 
+  /* Popup window */
+  const [popupVisible, setPopupVisible] = useState(false);
+
+  /* Take a message from the add appointment window to refresh the timesheet and grab all new appointments */
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data === 'appointment-added' || event.data === 'appointment-deleted') {
+        fetchAppointments();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
   /* Reset booking state values */
   const resetBookingState = () => {
     setSelectedTime(null);
@@ -76,7 +93,17 @@ function MainMenu() {
     resetBookingState();
     setSelectedTime(time);
     setSelectedProviderId(providerId);
-    setShowBookingWindow(true);
+    // setShowBookingWindow(true);
+    console.log("GOT HERE 1");
+
+    /* Query string with the info to be passed to the popup window */
+    const popupURL = `/appointment-form-popup?time=${encodeURIComponent(time)}&providerId=${providerId}&mode="add"`;
+
+    /* Open the popup appointment form window */
+    window.open(popupURL, 'ADD APPOINTMENT', 'width=600,height=550');
+
+
+    // setPopupVisible(true);
   };
 
   /**
@@ -260,6 +287,24 @@ function MainMenu() {
   };
 
   /**
+   * Handle editing an appointment after clicking on a patients name on the timesheet
+   */
+  const handleEditAppointment = async (time, providerId, appt) => {
+    resetBookingState();
+    setSelectedTime(time);
+    setSelectedProviderId(providerId);
+    // setSelectedAppointment(appt);
+    // setShowBookingWindow(true);
+    console.log("GOT HERE 1");
+
+    /* Query string with the info to be passed to the popup window */
+    const popupURL = `/appointment-form-popup?time=${encodeURIComponent(time)}&providerId=${providerId}&mode=edit&apptId=${appt.id}`;
+
+    /* Open the popup appointment form window */
+    window.open(popupURL, 'EDIT APPOINTMENT', 'width=600,height=550');
+  }
+
+  /**
    * Handle deleting an appointment after clicking on a patients name on the timesheet
    */
   const handleDeleteAppointment = async (apptId) => {
@@ -391,6 +436,7 @@ function MainMenu() {
                         });
                         setSelectedAppointment(appt);
                         setShowBookingWindow(true);
+                        handleEditAppointment(time, 1, appt);
                       }}
                       style = {{ cursor: 'pointer' }}
                     >
@@ -478,6 +524,7 @@ function MainMenu() {
                         });
                         setSelectedAppointment(appt);
                         setShowBookingWindow(true);
+                        handleEditAppointment(time, 2);
                       }}
                       style = {{ cursor: 'pointer' }}
                     >
@@ -557,7 +604,7 @@ function MainMenu() {
       </div>
 
       {/* Show the popup window when trying to book an appt*/}
-      {showBookingWindow && (
+      {/* {showBookingWindow && (
         <div className="popup-background">
           <div className="popup">
             <h2>Book Appointment for {selectedTime}</h2>
@@ -578,9 +625,9 @@ function MainMenu() {
               placeholder='Enter patient name'
               />
             </label>
-            {selectedPatient && (<p>Selected: {selectedPatient.firstname} {selectedPatient.lastname}</p>)}
+            {selectedPatient && (<p>Selected: {selectedPatient.firstname} {selectedPatient.lastname}</p>)} */}
             {/* Show the search results in the popup window */}
-            <ul className="search-results">
+            {/* <ul className="search-results">
               {searchResults.map((patient) => (
                 <li 
                   key={patient.id}
@@ -610,7 +657,20 @@ function MainMenu() {
 
           </div>
         </div>
-      )}
+      )} */}
+
+      {/* Show the popup window */}
+      {/* {popupVisible && (
+        <AppointmentFormPopup
+          visible={true}
+          mode={'add'}
+          selectedTime={selectedTime}
+
+
+          onClose={() => setPopupVisible(false)}
+
+        />
+      )} */}
 
     </div>
   );

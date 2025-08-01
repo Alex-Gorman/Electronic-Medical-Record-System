@@ -15,7 +15,7 @@ function Navbar() {
   const navItems = [
     { to: '/schedule', label: 'Schedule' },
     { to: '/caseload', label: 'Caseload' },
-    { to: '/search', label: 'Search' }, // special case: opens popup
+    { to: '/search', label: 'Search' }, /* special case: opens popup */
     { to: '/report', label: 'Report' },
     { to: '/billing', label: 'Billing' },
     { to: '/inbox', label: 'Inbox' },
