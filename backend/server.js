@@ -480,6 +480,78 @@ function startServer(connection) {
   });
 
 
+  /**
+   * PUT /appointments/:id
+   * Updates an existing appointment (reason, duration, time, etc.)
+   */
+  app.put('/appointments/:id', (req, res) => {
+    const apptId = req.params.id;
+    const {
+      patientId,
+      providerId,
+      date,
+      time,
+      duration,
+      reason,
+      status
+    } = req.body;
+
+    if (!apptId) return res.status(400).json({ error: 'Appointment ID required' });
+
+    /* Build the fields dynamically, so partials can be pateched if wanted */
+    const fields = [];
+    const values = [];
+
+    if (patientId !== undefined) {
+      fields.push('patient_id = ?');
+      values.push(patientId);
+    }
+    if (providerId !== undefined) {
+      fields.push('provider_id = ?');
+      values.push(providerId);
+    }
+    if (date !== undefined) {
+      fields.push('appointment_date = ?');
+      values.push(date);
+    }
+    if (time !== undefined) {
+      fields.push('start_time = ?');
+      values.push(time);
+    }
+    if (duration !== undefined) {
+      fields.push('duration_minutes = ?');
+      values.push(duration);
+    }
+    if (reason !== undefined) {
+      fields.push('reason = ?');
+      values.push(reason);
+    }
+    if (status !== undefined) {
+      fields.push('status = ?');
+      values.push(status);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    const query = `UPDATE appointments SET ${fields.join(', ')} WHERE id = ?`;
+    values.push(apptId);
+
+    connection.query(query, values, (err, results) => {
+      if (err) {
+        console.error('Failed to update appointment:', err.message);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: 'Appointment not found' });
+      }
+      res.status(200).json({ message: 'Appointment updated successfully' });
+    });
+  });
+
+
+
   app.listen(PORT, HOST, () => {
     console.log(`🚀 Server is running at http://${HOST}:${PORT}`);
   });
