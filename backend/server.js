@@ -550,6 +550,37 @@ function startServer(connection) {
     });
   });
 
+    /**
+   * GET /patients/:id
+   * Returns all demographic fields for the given patient ID
+   */
+  app.get('/patients/:id', (req, res) => {
+    const id = req.params.id;
+    if (!id) return res.status(400).json({ error: 'Patient ID required' });
+
+    const query = `SELECT
+      id, lastname, firstname, preferredname, address, city, province,
+      postalcode, homephone, workphone, cellphone, email, dob, sex,
+      healthinsurance_number AS healthNumber,
+      healthinsurance_version_code AS healthVersion,
+      patient_status AS status, family_physician AS familyPhysician
+      FROM patients
+      WHERE id = ?`;
+    connection.query(query, [id], (err, results) => {
+      if (err) {
+        console.error('Failed to fetch patient:', err.message);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (!results[0]) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+      res.json(results[0]);
+    });
+  });
+
+
+
+
 
 
   app.listen(PORT, HOST, () => {
