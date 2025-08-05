@@ -100,6 +100,63 @@ function MainMenu() {
   };
 
   /**
+   * Handle e-chart click
+   */
+  const handleEchartClick = async(appt) => {
+    const patientId = appt.patient_id;
+
+    /* Query string with the info to be passed to the popup window */
+    const popupURL = `/casemgmt?patientId=${encodeURIComponent(patientId)}`
+
+    /* Open the popup e-chart record for the given patient */
+    /* ENCOUNTER - LASTNAME, FIRSTNAME SEX AGE years */
+    window.open(popupURL, 'ENCOUNTER - LASTNAME, FIRSTNAME SEX AGE years', 'width=600,height=550');
+  }
+
+  /**
+   * Handle billing click
+   */
+  const handleBillingClick = async(appt) => {
+    const patientId = appt.patient_id;
+
+    /* Query string with the info to be passed to the popup window */
+    const popupURL = `/billing?patientId=${encodeURIComponent(patientId)}`
+
+    /* Open the popup e-chart record for the given patient */
+    window.open(popupURL, 'Ontario Billing', 'width=600,height=550');
+  }
+
+
+
+  /**
+   * Handle master record click
+   */
+  const handleMasterRecordClick = async(appt) => {
+    const patientId = appt.patient_id;
+
+    /* Query string with the info to be passed to the popup window */
+    const popupURL = `/demographic?patientId=${encodeURIComponent(patientId)}`;
+
+    /* Open the popup master record demographic for the given patient */
+    window.open(popupURL, 'PATIENT DETAIL INFO', 'width=800,height=550');
+  }
+
+  /**
+   * Handle Rx button click
+   */
+  const handleRxClick = async(appt) => {
+    const patientId = appt.patient_id;
+
+    /* Query string with the info to be passed to the popup window */
+    const popupURL = `/Rx?patientId=${encodeURIComponent(patientId)}`;
+
+    /* Open the popup master record demographic for the given patient */
+    window.open(popupURL, 'PATIENT DRUG PROFILE', 'width=600,height=550');
+  }
+
+
+
+  /**
    * Handle editing an appointment after clicking on a patients name on the timesheet
    */
   const handleEditAppointment = async (time, providerId, appt) => {
@@ -185,23 +242,19 @@ function MainMenu() {
               >
                 <strong>
                   <div className="appt-info">
-                    <span
-                      className="folder-icon"
-                      onClick={() => handleStatusClick(appt.id, appt.status)}
-                      style={{ cursor: 'pointer', marginRight: '5px'}}
-                    >
-                      📁
-                    </span>
+                    <span className="folder-icon" onClick={() => handleStatusClick(appt.id, appt.status)} style={{ cursor: 'pointer', marginRight: '5px'}} > 📁 </span>
+                    <span className="patient-name" onClick={() => { handleEditAppointment(time, 1, appt); }} style = {{ cursor: 'pointer' }}> {appt.firstname} {appt.lastname} </span>
+                    <span>|</span>
+                    <span onClick={() => {handleEchartClick(appt);}} style = {{ cursor: 'pointer' }}>E</span>
+                    <span>|</span>
+                    <span onClick={() => {handleBillingClick(appt);}} style = {{ cursor: 'pointer' }}>-B</span>
+                    <span>|</span>
+                    <span onClick={() => {handleMasterRecordClick(appt);}} style = {{ cursor: 'pointer' }}>M</span>
+                    <span>|</span>
+                    <span onClick={() => {handleRxClick(appt);}} style = {{ cursor: 'pointer' }}>Rx</span> 
+                    <span>|</span> 
+                    <span>{appt.reason}</span>   
 
-                    <span
-                      className="patient-name"
-                      onClick={() => {
-                        handleEditAppointment(time, 1, appt);
-                      }}
-                      style = {{ cursor: 'pointer' }}
-                    >
-                      {appt.firstname} {appt.lastname} | E | -B | M | Rx | {appt.reason}
-                    </span>
                   </div>
                 </strong>
               </td>
@@ -264,23 +317,19 @@ function MainMenu() {
               >
                 <strong>
                   <div className="appt-info">
-                    <span
-                      className="folder-icon"
-                      onClick={() => handleStatusClick(appt.id, appt.status)}
-                      style={{ cursor: 'pointer', marginRight: '5px'}}
-                    >
-                      📁
-                    </span>
+                    <span className="folder-icon" onClick={() => handleStatusClick(appt.id, appt.status)} style={{ cursor: 'pointer', marginRight: '5px'}} > 📁 </span>
+                    <span className="patient-name" onClick={() => { handleEditAppointment(time, 2, appt); }} style = {{ cursor: 'pointer' }} > {appt.firstname} {appt.lastname} </span>
+                    <span>|</span>
+                    <span onClick={() => {handleEchartClick(appt);}} style = {{ cursor: 'pointer' }}>E</span>
+                    <span>|</span>
+                    <span onClick={() => {handleBillingClick(appt);}} style = {{ cursor: 'pointer' }}>-B</span>
+                    <span>|</span>
+                    <span onClick={() => {handleMasterRecordClick(appt);}} style = {{ cursor: 'pointer' }}>M</span>
+                    <span>|</span>
+                    <span onClick={() => {handleRxClick(appt);}} style = {{ cursor: 'pointer' }}>Rx</span> 
+                    <span>|</span> 
+                    <span>{appt.reason}</span>   
 
-                    <span
-                      className="patient-name"
-                      onClick={() => {
-                        handleEditAppointment(time, 2, appt);
-                      }}
-                      style = {{ cursor: 'pointer' }}
-                    >
-                      {appt.firstname} {appt.lastname} | E | -B | M | Rx | {appt.reason}
-                    </span>
                   </div>  
                 </strong>
               </td>
