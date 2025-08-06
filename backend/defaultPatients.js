@@ -27,7 +27,7 @@ const DEFAULT_PATIENTS = [
     postalcode: 'M1A 1A1',
     province: 'Ontario',
     homephone: '4161111111',
-    workphone: '',
+    workphone: '4161278903',
     cellphone: '4167777777',
     email: 'annasmith@hotmail.com',
     dob: '1985-03-12',
