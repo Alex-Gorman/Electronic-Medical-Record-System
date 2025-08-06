@@ -578,10 +578,52 @@ function startServer(connection) {
     });
   });
 
+  /**
+   * PUT /patients/:id
+   */
+  app.put('/patients/:id', (req, res) => {
+    const patientId = req.params.id;
+    const allowedFields = [
+      'lastname', 'firstname', 'preferredname',
+      'address', 'city', 'province', 'postalcode',
+      'homephone', 'workphone', 'cellphone', 'email',
+      'dob', 'sex', 'healthinsurance_number',
+      'healthinsurance_version_code',
+      'patient_status', 'family_physician'
+    ];
 
+    /* Build dynamic SET clauses based on which fields are present in req.body */
+    const fields = [];
+    const values = [];
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        fields.push(`${field} = ?`);
+        values.push(req.body[field]);
+      }
+    }
 
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
 
+    const sql = `
+      UPDATE patients
+      SET ${fields.join(', ')}
+      WHERE id = ?
+    `;
+    values.push(patientId);
 
+    connection.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('Error updating patient:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+      res.json({ message: 'Patient updated successfully' });
+    });
+  });
 
   app.listen(PORT, HOST, () => {
     console.log(`🚀 Server is running at http://${HOST}:${PORT}`);
