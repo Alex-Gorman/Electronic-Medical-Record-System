@@ -1,0 +1,35 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm run test:ci
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Lint & type-check backend
+        working-directory: backend
+        run: npm run lint    # if you have a lint script
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test        # if you add backend tests
