@@ -1,6 +1,6 @@
 // backend/.eslintrc.js
 module.exports = {
-  root: true,
+  // root: true,
   parserOptions: {
     ecmaVersion: "latest",
     sourceType: "module",
