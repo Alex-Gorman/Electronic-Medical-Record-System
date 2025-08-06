@@ -138,7 +138,8 @@ function MainMenu() {
     const popupURL = `/demographic?patientId=${encodeURIComponent(patientId)}`;
 
     /* Open the popup master record demographic for the given patient */
-    window.open(popupURL, 'PATIENT DETAIL INFO', 'width=800,height=550');
+    // window.open(popupURL, 'PATIENT DETAIL INFO', 'width=950,height=22250');
+    window.open(popupURL, '_blank', 'width=950,height=800,resizable=yes,scrollbars=yes');
   }
 
   /**
