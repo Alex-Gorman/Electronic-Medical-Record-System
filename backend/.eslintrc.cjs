@@ -1,6 +1,16 @@
 // backend/.eslintrc.js
+// module.exports = {
+//   env: {
+//     node: true,
+//     es2021: true
+//   }, 
+// };
 module.exports = {
   // root: true,
+  env: {
+    node: true,
+    es2021: true
+  }, 
   parserOptions: {
     ecmaVersion: "latest",
     sourceType: "module",
