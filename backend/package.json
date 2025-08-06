@@ -6,10 +6,10 @@
     "mysql2": "^3.x"
   },
   "devDependencies": {
-    "eslint": "^9.32.0"
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5"
   },
   "scripts": {
     "lint": "eslint --config .eslintrc.cjs ."
   }
-
 }
