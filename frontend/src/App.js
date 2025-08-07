@@ -7,6 +7,7 @@ import SearchPage from './SearchPage/SearchPage';
 import CreateDemographic from './CreateDemographic/CreateDemographic';
 import AppointmentFormPopup from './Components/AppointmentFormPopup';
 import MasterRecord from './Components/MasterRecord';
+import CalendarPopup from './Components/CalendarPopup';
 
 /**
  * AppWrapper is a component that enables the use of React Router hooks.
@@ -16,7 +17,7 @@ function AppWrapper() {
   const location = useLocation();
 
   /* Hide navbar on login, popup search, and create-demographic pages */
-  const hideNavbarRoutes = ['/', '/search-popup', '/create-demographic', '/appointment-form-popup', '/casemgmt', '/billing', '/demographic', '/Rx'];
+  const hideNavbarRoutes = ['/', '/search-popup', '/create-demographic', '/appointment-form-popup', '/casemgmt', '/billing', '/demographic', '/Rx', '/calendar-popup'];
   const showNavbar = !hideNavbarRoutes.includes(location.pathname);
 
   return (
@@ -33,6 +34,7 @@ function AppWrapper() {
         <Route path="/billing"/>
         <Route path="/demographic" element={<MasterRecord />}/>
         <Route path="/Rx"/>
+        <Route path="/calendar-popup" element={<CalendarPopup />} />
       </Routes>
     </div>
   );
