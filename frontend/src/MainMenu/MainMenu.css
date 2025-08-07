@@ -54,6 +54,22 @@
   align-items: center;
 }
 
+.subbar-left,
+.search-section {
+  display: flex;
+  align-items: baseline;
+}
+
+/* pick whatever height your input is ending up at (e.g. 30px)
+.search-section label,
+.search-section input,
+.search-section button {
+  line-height: 30px;
+  height: 30px;
+} */
+
+
+
 .emr-group {
   font-weight: bold;
   margin-right: 20px;
@@ -78,6 +94,11 @@
   font-size: 12px;
   padding: 4px 8px;
   margin-left: 5px;
+}
+
+.search-section label {
+  background-color: transparent;  /* or whatever your #e6e6e6 is */
+  padding: 0 4px;                  /* optional to avoid jump when focus adds outline */
 }
 
 /* ========== Secondary Bar ========== */
@@ -265,6 +286,21 @@
   align-items: center;
   gap: 6px;
 }
+
+/* in MainMenu.css */
+.search-section label::selection {
+  background: transparent;
+}
+/* for Firefox
+.search-section label::-moz-selection {
+  background: transparent;
+} */
+
+/* .search-section label {
+  user-select: none;
+} */
+
+
 
 
 
