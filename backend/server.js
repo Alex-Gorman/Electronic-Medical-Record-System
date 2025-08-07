@@ -378,25 +378,84 @@ function startServer(connection) {
    * POST /appointments
    * Inserts booked appointment details form the frontend into the appointments table
    */
-  app.post('/appointments', (req, res) => {
+  app.post('/appointments', async (req, res) => {
     const { patientId, providerId, date, time, duration, reason, status } = req.body;
 
-    /* SQL Query to insert the appointment info into the appointments table */
-    const query = `INSERT INTO appointments
-      (patient_id, provider_id, appointment_date, start_time, duration_minutes, reason, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;  
+    // // compute end time
+    // const [h, m, s] = time.split(':').map(Number);
+    // const startSec = h * 3600 + m * 60 + s;
+    // const endSec = startSec + duration * 60;
 
-    values = [patientId, providerId, date, time, duration, reason, status || 'booked'];
+    const [h, m, s = 0] = time.split(':').map(Number);
+    const startSec = h*3600 + m*60 + s;
+    const endSec   = startSec + Number(duration)*60;
 
-    connection.query(query, values, (err, results) => {
-      if (err) {
-        console.error('Failed to insert appointment info:', err.message);
-        return res.status(500).json({ error: 'Failed to insert appointment'});
-      }
-      res.status(201).json({ message: 'Appointment added successfully'});
-    });
 
+
+
+    // 1) check for overlap
+    const overlapQuery = `
+      SELECT COUNT(*) AS cnt
+        FROM appointments
+      WHERE provider_id = ?
+        AND appointment_date = ?
+        AND NOT (
+              SEC_TO_TIME(? ) <= start_time
+          OR  ADDTIME(start_time, SEC_TO_TIME(duration_minutes*60)) <= SEC_TO_TIME(?)
+        )
+    `;
+    const [rows] = await connection
+      .promise()
+      .query(overlapQuery, [
+        providerId,
+        date,
+        endSec,     // new end
+        startSec,   // new start
+      ]);
+    if (rows[0].cnt > 0) {
+      return res.status(409).json({ error: 'Time slot already booked' });
+    }
+
+    // 2) otherwise insert
+    const insertQ = `
+      INSERT INTO appointments
+        (patient_id, provider_id, appointment_date, start_time, duration_minutes, reason, status)
+      VALUES (?,?,?,?,?,?,?)
+    `;
+    await connection
+      .promise()
+      .query(insertQ, [
+        patientId,
+        providerId,
+        date,
+        time,
+        duration,
+        reason || '',
+        status || 'booked',
+      ]);
+
+    res.status(201).json({ message: 'Appointment added successfully' });
   });
+
+  // app.post('/appointments', (req, res) => {
+  //   const { patientId, providerId, date, time, duration, reason, status } = req.body;
+
+  //   /* SQL Query to insert the appointment info into the appointments table */
+  //   const query = `INSERT INTO appointments
+  //     (patient_id, provider_id, appointment_date, start_time, duration_minutes, reason, status)
+  //     VALUES (?, ?, ?, ?, ?, ?, ?)`;  
+
+  //   values = [patientId, providerId, date, time, duration, reason, status || 'booked'];
+
+  //   connection.query(query, values, (err, results) => {
+  //     if (err) {
+  //       console.error('Failed to insert appointment info:', err.message);
+  //       return res.status(500).json({ error: 'Failed to insert appointment'});
+  //     }
+  //     res.status(201).json({ message: 'Appointment added successfully'});
+  //   });
+
+  // });
 
   /**
    * GET /appointments
@@ -625,6 +684,26 @@ function startServer(connection) {
       res.json({ message: 'Patient updated successfully' });
     });
   });
+
+  // after your other routes
+  app.get('/appointments/:id', (req, res) => {
+    const id = req.params.id;
+    connection.query(
+      `SELECT a.*, p.firstname, p.lastname, d.name AS provider_name
+        FROM appointments a
+        LEFT JOIN patients p ON p.id = a.patient_id
+        LEFT JOIN doctors d ON d.id = a.provider_id
+        WHERE a.id = ?`,
+      [id],
+      (err, results) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        if (results.length === 0) return res.status(404).json({ error: 'Not found' });
+        // results[0] is a single appointment object
+        res.json(results[0]);
+      }
+    );
+  });
+
 
   app.listen(PORT, HOST, () => {
     console.log(`🚀 Server is running at http://${HOST}:${PORT}`);
