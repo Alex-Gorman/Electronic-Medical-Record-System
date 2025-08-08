@@ -216,113 +216,229 @@ function startServer(connection) {
     });
    }); 
 
+   /**
+ * GET /patients/search
+ * Supports:
+ *  - Name: "Last" (prefix on last) OR "Last, First" (exact last + first prefix)
+ *  - Phone, DOB, Health number, Email, Address (unchanged)
+ */
+app.get('/patients/search', (req, res) => {
+  const keyword = (req.query.keyword || '').trim();
+  const mode = req.query.mode || 'search_name';
 
+  if (!keyword) {
+    return res.status(400).json({ error: 'Keyword required' });
+  }
 
-  /**
-   * GET /patients/search
-   * Supports searching by full name: "Last, First" or just "Last"
-   * Supports searching by phone number
-   */
-  app.get('/patients/search', (req, res) => {
+  let query = '';
+  let params = [];
 
-    /* value to search */
-    const keyword = req.query.keyword;
+  switch (mode) {
+    case 'search_name': {
+      // Split on comma for "Last, First"
+      const [lastRaw, firstRaw] = keyword.split(',').map(s => (s || '').trim());
 
-    /* search mode, default to search name if no mode given */
-    const mode = req.query.mode || 'search_name';
-
-    /* If no keyword given return error message */
-    if (!keyword) return res.status(400).json({ error: 'Keyword required' });
-
-    /* Where the SQL query will be stored */
-    let query = '';
-
-    /* Holds parameter values that will be safely inserted into the query */
-    let params = [];
-
-    /* Search by mode type */
-    switch (mode) {
-      case 'search_name': {
-
-          /* Split "Smith, John" into parts */
-          const parts = keyword.split(',').map(part => part.trim());
-
-          /* Check to see if user entered "Lastname, Firstname" */
-          if (parts.length == 2) {
-            query = `
-              SELECT * FROM patients
-              WHERE lastname LIKE ? AND firstname LIKE ?
-            `;
-            params = [`%${parts[0]}`, `%${parts[1]}`];
-
-
-          /* Otherwise check any name field */  
-          } else {
-            query = `
-              SELECT * FROM patients
-              WHERE lastname LIKE ? OR firstname LIKE ? OR preferredname
-            `;
-            params = [`%${keyword}`, `%${keyword}`, `%${keyword}`];
-          }
-          break;
-      }
-
-      case 'search_phone': {
+      if (firstRaw) {
+        // "Last, First" -> exact match on last, prefix on first
         query = `
           SELECT * FROM patients
-          WHERE homephone LIKE ? OR cellphone LIKE ? OR workphone LIKE ?
+          WHERE LOWER(lastname) = LOWER(?)
+            AND LOWER(firstname) LIKE LOWER(CONCAT(?, '%'))
+          ORDER BY lastname, firstname
+          LIMIT 50
         `;
-
-        params = [`%${keyword}`, `%${keyword}`, `%${keyword}`];
-        break;
-      }
-
-      case 'search_dob': {
+        params = [lastRaw, firstRaw];
+      } else if (lastRaw) {
+        // "Last" only -> prefix on last name
         query = `
-        SELECT * FROM patients
-        WHERE dob LIKE ?
+          SELECT * FROM patients
+          WHERE LOWER(lastname) LIKE LOWER(CONCAT(?, '%'))
+          ORDER BY lastname, firstname
+          LIMIT 50
         `;
-
-        params = [`%${keyword}`];
-        break;
+        params = [lastRaw];
+      } else {
+        return res.status(400).json({ error: 'Invalid name format' });
       }
-
-      case 'search_health_number': {
-        query = `
-        SELECT * FROM patients
-        WHERE healthinsurance_number LIKE ?
-        `;
-        params = [`%${keyword}`];
-        break;
-      }
-
-      case 'search_email': {
-        query = `
-        SELECT * FROM patients 
-        WHERE email LIKE ?
-        `;
-        params = [`%${keyword}`];
-        break;
-      }
-
-      case 'search_address': {
-        query = `
-        SELECT * FROM patients
-        WHERE address LIKE ?
-        `;
-        params = [`%${keyword}`];
-        break;
-      }
-
-      default:
-        return res.status(400).json({error: "Invalid search mode"});
+      break;
     }
 
-    connection.query(query, params, (err, results) => {
-      if (err) return res.status(400).json({ error: 'Database error'});
-      res.json(results);
-    });
+    case 'search_phone': {
+      query = `
+        SELECT * FROM patients
+        WHERE homephone LIKE ? OR cellphone LIKE ? OR workphone LIKE ?
+        ORDER BY lastname, firstname
+        LIMIT 50
+      `;
+      params = [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`];
+      break;
+    }
+
+    case 'search_dob': {
+      query = `
+        SELECT * FROM patients
+        WHERE dob LIKE ?
+        ORDER BY lastname, firstname
+        LIMIT 50
+      `;
+      params = [`%${keyword}%`];
+      break;
+    }
+
+    case 'search_health_number': {
+      query = `
+        SELECT * FROM patients
+        WHERE healthinsurance_number LIKE ?
+        ORDER BY lastname, firstname
+        LIMIT 50
+      `;
+      params = [`%${keyword}%`];
+      break;
+    }
+
+    case 'search_email': {
+      query = `
+        SELECT * FROM patients
+        WHERE email LIKE ?
+        ORDER BY lastname, firstname
+        LIMIT 50
+      `;
+      params = [`%${keyword}%`];
+      break;
+    }
+
+    case 'search_address': {
+      query = `
+        SELECT * FROM patients
+        WHERE address LIKE ?
+        ORDER BY lastname, firstname
+        LIMIT 50
+      `;
+      params = [`%${keyword}%`];
+      break;
+    }
+
+    default:
+      return res.status(400).json({ error: 'Invalid search mode' });
+  }
+
+  connection.query(query, params, (err, results) => {
+    if (err) {
+      console.error('DB error in /patients/search:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
   });
+});
+
+
+
+
+  // /**
+  //  * GET /patients/search
+  //  * Supports searching by full name: "Last, First" or just "Last"
+  //  * Supports searching by phone number
+  //  */
+  // app.get('/patients/search', (req, res) => {
+
+  //   /* value to search */
+  //   const keyword = req.query.keyword;
+
+  //   /* search mode, default to search name if no mode given */
+  //   const mode = req.query.mode || 'search_name';
+
+  //   /* If no keyword given return error message */
+  //   if (!keyword) return res.status(400).json({ error: 'Keyword required' });
+
+  //   /* Where the SQL query will be stored */
+  //   let query = '';
+
+  //   /* Holds parameter values that will be safely inserted into the query */
+  //   let params = [];
+
+  //   /* Search by mode type */
+  //   switch (mode) {
+  //     case 'search_name': {
+
+  //         /* Split "Smith, John" into parts */
+  //         const parts = keyword.split(',').map(part => part.trim());
+
+  //         /* Check to see if user entered "Lastname, Firstname" */
+  //         if (parts.length == 2) {
+  //           query = `
+  //             SELECT * FROM patients
+  //             WHERE lastname LIKE ? AND firstname LIKE ?
+  //           `;
+  //           params = [`%${parts[0]}`, `%${parts[1]}`];
+
+
+  //         /* Otherwise check any name field */  
+  //         } else {
+  //           query = `
+  //             SELECT * FROM patients
+  //             WHERE lastname LIKE ? OR firstname LIKE ? OR preferredname
+  //           `;
+  //           params = [`%${keyword}`, `%${keyword}`, `%${keyword}`];
+  //         }
+  //         break;
+  //     }
+
+  //     case 'search_phone': {
+  //       query = `
+  //         SELECT * FROM patients
+  //         WHERE homephone LIKE ? OR cellphone LIKE ? OR workphone LIKE ?
+  //       `;
+
+  //       params = [`%${keyword}`, `%${keyword}`, `%${keyword}`];
+  //       break;
+  //     }
+
+  //     case 'search_dob': {
+  //       query = `
+  //       SELECT * FROM patients
+  //       WHERE dob LIKE ?
+  //       `;
+
+  //       params = [`%${keyword}`];
+  //       break;
+  //     }
+
+  //     case 'search_health_number': {
+  //       query = `
+  //       SELECT * FROM patients
+  //       WHERE healthinsurance_number LIKE ?
+  //       `;
+  //       params = [`%${keyword}`];
+  //       break;
+  //     }
+
+  //     case 'search_email': {
+  //       query = `
+  //       SELECT * FROM patients 
+  //       WHERE email LIKE ?
+  //       `;
+  //       params = [`%${keyword}`];
+  //       break;
+  //     }
+
+  //     case 'search_address': {
+  //       query = `
+  //       SELECT * FROM patients
+  //       WHERE address LIKE ?
+  //       `;
+  //       params = [`%${keyword}`];
+  //       break;
+  //     }
+
+  //     default:
+  //       return res.status(400).json({error: "Invalid search mode"});
+  //   }
+
+  //   connection.query(query, params, (err, results) => {
+  //     if (err) return res.status(400).json({ error: 'Database error'});
+  //     res.json(results);
+  //   });
+  // });
 
 
 
