@@ -12,6 +12,7 @@
 - Deletes appointments and notifies the opener window to update the day view.
 
 > **Location in repo**: `frontend/src/Components/AppointmentFormPopup.js`
+> **Related styles:** `frontend/src/Components.AppointmentFormPopup.css`
 
 ---
 
@@ -47,6 +48,7 @@ window.open(
 ---
 
 ## External Endpoints Used
+Base URL: `http://localhost:3002`
 - `GET /appointments?date=YYYY-MM-DD&providerId=<id>` → list of existing appointments for conflict checks
 - `GET /appointments/:id` → load existing appt (edit mode)
 - `POST /appointments` → create new appt
@@ -79,7 +81,7 @@ All endpoints are called at `http://localhost:3002`.
 
 ---
 
-### Helper Functions
+## Helper Functions
 - `roundToNearestFive(timeStr: string): string`\
   Rounds a `HH:MM` string to the nearest 5-minute interval.
 - `checkIfTimeConflict(appt, durationNum, selectedTimeRawMinutes): boolean`\
