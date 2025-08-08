@@ -1,50 +1,127 @@
+/**
+ * AppointmentFormPopup.js
+ *
+ * Popup UI for creating or editing an appointment.
+ *
+ * Reads URL query params:
+ *  - time       (string "HH:MM")
+ *  - providerId (string | number)
+ *  - apptId     (string | number, only in edit mode)
+ *  - mode       ("add" | "edit")
+ *  - date       (string "YYYY-MM-DD")
+ *
+ * Backend endpoints used (base: http://localhost:3002):
+ *  - GET    /appointments?date=YYYY-MM-DD&providerId=ID
+ *  - GET    /appointments/:id
+ *  - POST   /appointments
+ *  - PUT    /appointments/:id
+ *  - DELETE /appointments/:id
+ *  - GET    /patients/search?keyword=...&mode=search_name
+ *
+ * @file
+ * @module AppointmentFormPopup
+ * @component AppointmentFormPopup
+ * @example
+ * // Add
+ * window.open(
+ *   '/appointment-form-popup?mode=add&providerId=1&date=2025-08-04&time=10:00',
+ *   'ADD APPOINTMENT',
+ *   'width=600,height=550'
+ * );
+ *
+ * @example
+ * // Edit
+ * window.open(
+ *   '/appointment-form-popup?mode=edit&providerId=1&apptId=42&date=2025-08-04&time=10:25',
+ *   'EDIT APPOINTMENT',
+ *   'width=600,height=550'
+ * );
+ */
+
 import { useLocation } from 'react-router-dom';
 import React, {useEffect, useState} from 'react';
 import './AppointmentFormPopup.css';
 
+/**
+ * @typedef {Object} Patient
+ * @property {number} id
+ * @property {string} firstname
+ * @property {string} lastname
+ */
+
+/**
+ * Shape returned by the appointments API.
+ * @typedef {Object} Appointment
+ * @property {number} id
+ * @property {string} start_time             // "HH:MM:SS"
+ * @property {number} duration_minutes
+ * @property {string} [reason]
+ * @property {'booked'|'present'|'being_seen'|'finished'|'missed'} status
+ * @property {number} patient_id
+ * @property {string} firstname
+ * @property {string} lastname
+ * @property {string} [provider_name]
+ */
+
+/**
+ * AppointmentFormPopup
+ *
+ * Renders the popup form. In edit mode it loads the appointment once; on save it
+ * either POSTs (add) or PUTs (edit). It also performs client-side conflict
+ * detection by fetching same-day appointments for the provider.
+ *
+ * @returns {JSX.Element}
+ * @emits window#message { type: 'appointment-added', apptId: string|number, date: string }
+ * @emits window#message { type: 'appointment-deleted', apptId: string|number, date: string }
+ */
 function AppointmentFormPopup() {
+    /* ===== Query params ===== */
     const location = useLocation();
     const params = new URLSearchParams(location.search);
 
+    /* mode is either 'add' or 'edit' */
+    const mode = params.get("mode");
     const time = params.get("time");
     const providerId = params.get("providerId");
     const apptId = params.get("apptId");
-
-    const mode = params.get("mode"); /* mode is either 'add' or 'edit' */
-    const isEditMode = mode === 'edit';
-    
-    /* Holds the array of patient search results from backend */
-    const [searchResults, setSearchResults] = useState([]);
-
-    /* Store the current date, HARDCODE FOR NOW */
-    // const currentDate = '2025-06-27'; /* REPLACE WITH DYANMIC DATE LATER */
-    // const currentDate = params.get("date");
-    // currentDate.toLocaleDateString('en-CA')  // e.g. "2025-08-06"
-
-    // const isoDate = currentDate.toLocaleDateString('en-CA').slice(0,10);
-
-    // const currentDate = params.get("date");
-    
     const dateParam   = params.get("date");
-    // if dateParam is present, parse it; otherwise fallback to today
-    const currentDate = dateParam ? new Date(dateParam) : new Date();
+    const isEditMode = mode === 'edit';
 
-    // now we can produce an ISO date string safely:
-    const isoDate = currentDate.toISOString().slice(0, 10);
-    // const isoDate = dateParam;
+    /* ===== Component state ===== */
+    /** @type {["form"|"search", Function]} */
+    const [viewMode, setViewMode] = useState("form");
 
-    /* Store the view mode */
-    const [viewMode, setViewMode] = useState("form"); /* "form" or "search" */
-
-    /* Store the selected patient */
+    /** @type {[Patient|null, Function]} */
     const [selectedPatient, setSelectedPatient] = useState(null);
 
-    /* Appointment status */
+    /** @type {[Appointment['status'], Function]} -> Appointment Status */
     const [appointmentStatus, setAppointmentStatus] = useState('booked');
 
-    /* Appointment start time */
+    /** @type {[string, Function]} -> Appointment Start Time */
     const [startTime, setStartTime] = useState(time || '');
 
+    /** @type {[string, Function]} -> Appointment Duration Time */
+    const [durationString, setDurationString] = useState('15');
+
+    /** @type {[string, Function]} */
+    const [appointmentReason, setAppointmentReason] = useState('');
+
+    /** @type {[any[], Function]} */
+    const [searchResults, setSearchResults] = useState([]);
+
+    /** @type {[string, Function]} */
+    const [nameInput, setNameInput] = useState("");
+
+
+    /**
+     * Parse the date param; fallback to today.
+     * NOTE: Using toISOString() can shift the calendar day if the Date carries a non-midnight local time.
+     * Here, dateParam comes as YYYY-MM-DD (no time), so new Date(dateParam) is fine in modern browsers.
+     */
+    const currentDate = dateParam ? new Date(dateParam) : new Date();
+    const isoDate = currentDate.toISOString().slice(0, 10);
+
+    /* UI <-> backend status label mapping */
     const uiToBackendStatus = {
         'To Do': 'booked',
         'Here': 'present',
@@ -61,73 +138,51 @@ function AppointmentFormPopup() {
         finished: 'Billed',
     };
 
-    const [nameInput, setNameInput] = useState("");
-
-    const [durationString, setDurationString] = useState('15');
-
-    const [appointmentReason, setAppointmentReason] = useState('');
+    /* ===== Effects ===== */
 
     useEffect(() => {
-  if (!isEditMode || !apptId) return;
+        /* In edit mode, load the existing appointment data once */
+        if (!isEditMode || !apptId) return;
 
-  console.log('Loading appointment id=', apptId);
-  fetch(`http://localhost:3002/appointments/${apptId}`)
-    .then(res => {
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      return res.json();
-    })
-    .then(appt => {
-      // now appt is your single object
-      setDurationString(String(appt.duration_minutes));
-      setAppointmentReason(appt.reason || '');
-      setAppointmentStatus(appt.status);
-      setSelectedPatient({
-        id: appt.patient_id,
-        firstname: appt.firstname,
-        lastname: appt.lastname,
-      });
-      setStartTime(appt.start_time.slice(0,5));
-    })
-    .catch(err => {
-      console.error('Failed to load appointment for edit:', err);
-      alert('Could not load appointment');
-    });
-}, [isEditMode, apptId]);
+        console.log('Loading appointment id=', apptId);
+        fetch(`http://localhost:3002/appointments/${apptId}`)
+            .then(res => {
+            if (!res.ok) throw new Error(`Status ${res.status}`);
+            return res.json();
+            })
+            .then(appt => {
+            setDurationString(String(appt.duration_minutes));
+            setAppointmentReason(appt.reason || '');
+            setAppointmentStatus(appt.status);
+            setSelectedPatient({
+                id: appt.patient_id,
+                firstname: appt.firstname,
+                lastname: appt.lastname,
+            });
+            setStartTime(appt.start_time.slice(0,5));
+            })
+            .catch(err => {
+            console.error('Failed to load appointment for edit:', err);
+            alert('Could not load appointment');
+            });
+    }, [isEditMode, apptId]);
+    
+    useEffect(() => {
+        /* Set window title to reflect mode */
+        document.title = 'ADD APPOINTMENT';
+        if (mode === 'add') document.title = 'ADD APPOINTMENT';
+        else if (mode === 'edit') document.title = 'EDIT APPOINTMENT';
+    }, []);
 
+    /* ===== Helpers ===== */
 
-    // useEffect(() => {
-    //     /* If in edit mode and there is a valid appointment id */
-    //     console.log('Loading appt id=', apptId, 'for date=', isoDate);
-
-    //     if (isEditMode && apptId) {
-    //         fetch(`http://localhost:3002/appointments?date=${isoDate}`)
-    //         .then(res => res.json())
-    //         .then(all => {
-    //             /* Find the specific appt */
-    //             /* === MAY WANT BACKEND GET /appointments/:id function in future === */
-    //             const appt = all.find((a) => String(a.id) === String(apptId));
-    //             if (!appt) {
-    //                 alert('Appointment not found for editing');
-    //                 return;
-    //             }
-    //             setDurationString(String(appt.duration_minutes));
-    //             setAppointmentReason(appt.reason || '');
-    //             setAppointmentStatus(appt.status);
-    //             setSelectedPatient({
-    //             id: appt.patient_id,
-    //             firstname: appt.firstname,
-    //             lastname: appt.lastname,
-    //             });
-    //             setStartTime(appt.start_time.slice(0,5)); /* e.g. "14:30" */
-    //         })
-    //         .catch(err => {
-    //             console.error('Failed to load appointment for edit:', err);
-    //             alert('Could not load appointment');
-    //         });
-    //     }
-    // }, [isEditMode, apptId, currentDate]);
-
-    /* Helper function to round "HH:MM" to nearest 5 minutes */
+    /**
+     * Round a “HH:MM” time string to the nearest 5-minute mark.
+     * E.g. “10:27” → “10:25”, “10:28” → “10:30”.
+     * 
+     * @param {string} timeStr 
+     * @returns {string} rounded time “HH:MM”
+     */    
     function roundToNearestFive(timeStr) {
         if (!timeStr) return timeStr;
         const [h, m] = timeStr.split(':').map(Number);
@@ -139,48 +194,64 @@ function AppointmentFormPopup() {
         return `${String(rh).padStart(2, '0')}:${String(rm).padStart(2, '0')}`;
     }
 
-    /* Title for the window based on whether there is an appointment being added or edited */
-    useEffect(() => {
-        document.title = 'ADD APPOINTMENT';
-        if (mode === 'add') document.title = 'ADD APPOINTMENT';
-        else if (mode === 'edit') document.title = 'EDIT APPOINTMENT';
-    }, []);
 
-    /* Cancel button handler */
-    const handleCancel = () => {
-        window.close();
-    };
+    /**
+     * Determine whether booking (selectedTimeRawMinutes .. +durationNum) overlaps with an existing appointment.
+     * Uses half-open interval logic: [start, end)
+     * Conflict if (newAppointmentStart >= currentBookedAppointmentStart) && (newAppointmentStart <= currentBookedAppointmentEnd)
+     * Conflict if (newAppointmentEnd >= currentBookedAppointmentStart) && (newAppointmentEnd <= currentBookedAppointmentEnd)
+     * Conflict if (newAppointmentStart < currentBookedAppointmentStart) && (newAppointmentEnd > currentBookedAppointmentEnd)
+     * Conflict if (newAppointmentStart > currentBookedAppointmentStart) && (newAppointmentEnd < currentBookedAppointmentEnd)
+     * 
+     * @param {Appointment} appt existing appointment to compare
+     * @param {number} durationNum requested duration in minutes
+     * @param {number} selectedTimeRawMinutes requested start in minutes since midnight
+     * @returns {boolean} true if there is a conflict
+     */
 
-    /* If no time or providerId, give error message on page */
+    const checkIfTimeConflict = (appt, durationNum, selectedTimeRawMinutes) => {
+        /* Appointment start for current appt being checked */
+        const currentBookedAppointmentStart = (parseInt(appt.start_time.slice(0, 2)) * 60) + parseInt(appt.start_time.slice(3, 5));
+
+        /* Appointment end for current appt being checked */
+        const currentBookedAppointmentEnd = currentBookedAppointmentStart + appt.duration_minutes;
+
+        /* Appointment start for appointment trying to be booked */
+        const newAppointmentStart = selectedTimeRawMinutes;
+        
+        /* Appointment end for appointment trying to be booked */
+        const newAppointmentEnd = newAppointmentStart + durationNum;
+
+        let isConflict = false;
+
+        /* If there is a conflict with the new appointment, then set the flag to true */
+        if (newAppointmentEnd <= currentBookedAppointmentStart) isConflict = false;
+        else if (newAppointmentStart >= currentBookedAppointmentEnd) isConflict = false;
+        else if ((newAppointmentStart >= currentBookedAppointmentStart) && (newAppointmentStart <= currentBookedAppointmentEnd)) isConflict = true;
+        else if ((newAppointmentEnd >= currentBookedAppointmentStart) && (newAppointmentEnd <= currentBookedAppointmentEnd)) isConflict = true;
+        else if ((newAppointmentStart < currentBookedAppointmentStart) && (newAppointmentEnd > currentBookedAppointmentEnd)) isConflict = true;
+        else if ((newAppointmentStart > currentBookedAppointmentStart) && (newAppointmentEnd < currentBookedAppointmentEnd)) isConflict = true;
+        return isConflict;
+    }
+
+
+    /* ===== Early param validation ===== */
     if (!time || !providerId) {
         return <div>Error: Missing time or provider ID.</div>;
     }
 
-    /* Get the EST time zone (Toronto Time) */
-    const getESTDateTimeLocal = () => {
-        /* Create a date in local timezone (EST if system is EST) */
-        const now = new Date();
 
-        /* Convert explicitly to New York timezone components */
-        const estFormatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-        });
+    /* ===== Handlers ===== */
 
-        const parts = estFormatter.formatToParts(now);
-        const values = {};
-        parts.forEach(p => { values[p.type] = p.value; });
-
-        /* Format as YYYY-MM-DDTHH:MM */
-        return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
+    /* Close the popup without saving */
+    const handleCancel = () => {
+        window.close();
     };
-
-    /* Search handler function (when pressing Enter in name input */
+    
+    /**
+     * Name box handler: on Enter, perform patient search.
+     * @param {React.KeyboardEvent<HTMLInputElement>} e 
+     */
     const handleSearch = async (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
@@ -204,51 +275,34 @@ function AppointmentFormPopup() {
         }
     };
 
-    /* Format phone */
-    const formatPhone = (number) => {
-        if (!number) return '';
-        const cleaned = number.replace(/\D/g, '');
-        if (cleaned.length !== 10) return number;
-        return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-    };
 
     /**
      * Handle booking the appointment for a given patient with their details
-     * Handle errors if there is a conflict or not all of the correct info is given
+     * Main booking flow: validates inputs, checks conflicts, then POST/PUT.
+     * Alerts on conflict or network errors. On success, notifies opener and closes.
      */
     const handleBookAppointmentPopup = async () => {
-        /* Ensure we have all required data */
+        /* 1. Validate minimal inputs */
         if (!selectedPatient || !time) {
             alert('Please select a patient and a time.');
             return;
         }
 
-        /* Fetch fresh appointments directly from backend */
+        /* 2. Fetch same-day appointments for the provider for conflict checking */
         let freshAppointments = [];
         try {
-            // const response = await fetch(`http://localhost:3002/appointments?date=${isoDate}`);
-            // freshAppointments = await response.json();
-
-            const res = await fetch(`http://localhost:3002/appointments?date=${isoDate}`);
+            const res = await fetch(`http://localhost:3002/appointments?date=${encodeURIComponent(isoDate)}&providerId=${encodeURIComponent(providerId)}`);
             const data = await res.json();
             freshAppointments = Array.isArray(data) ? data : [];
-
-
         } catch (error) {
             console.error('Error fetching appointments for conflict check:', error);
             alert('Unable to verify appointment conflicts');
             return;
         }
 
-        freshAppointments = freshAppointments.filter(a =>
-            String(a.provider_id) === String(providerId)
-        );
-
-        /*  enforce rounding the chosen time to the nearest five minute mark */
+        /* 3. Normalize time & duration, enforce rounding the chosen time to the nearest five minute mark */
         const roundedStartTime = roundToNearestFive(startTime);
-        if (roundedStartTime !== startTime) {
-        setStartTime(roundedStartTime);
-        }
+        if (roundedStartTime !== startTime) setStartTime(roundedStartTime);
         const selectedTimeRawMinutes = parseInt(roundedStartTime.split(':')[0], 10) * 60
         + parseInt(roundedStartTime.split(':')[1], 10);
 
@@ -258,73 +312,23 @@ function AppointmentFormPopup() {
         /* Get the duration time in number format */
         const durationNum = durationString === '' ? 15 : parseInt(durationString, 10);
 
-
+        /* 4. Conflict detection (skip self when editing) */
         for (const appt of freshAppointments) {
             /* When editing, skip the appointment being edited itself */
             if (isEditMode && String(appt.id) === String(apptId)) continue;
 
-            /* Appointment start for current appt being checked */
-            const apptStart = (parseInt(appt.start_time.slice(0, 2)) * 60) + parseInt(appt.start_time.slice(3, 5));
-
-            /* Appointment end for current appt being checked */
-            const apptEnd = apptStart + appt.duration_minutes;
-
-            /* Appointment start for appointment trying to be booked */
-            const selectedStart = selectedTimeRawMinutes;
-
-            /* Appointment end for appointment trying to be booked */
-            const selectedEnd = selectedStart + durationNum;
-
-            /* If there is a conflict with the new appointment, then set the flag to true */
-            if ((selectedStart >= apptStart) && (selectedStart <= apptEnd)) {
-                console.log("Time conflict scenario 1");
+            if (checkIfTimeConflict(appt, durationNum, selectedTimeRawMinutes)) {
                 isConflict = true;
+                break;
             }
-
-            if ((selectedEnd >= apptStart) && (selectedEnd <= apptEnd)) {
-                console.log("Time conflict scenario 2");
-                isConflict = true;
-            }
-
-            if ((selectedStart < apptStart) && (selectedEnd > apptEnd)) {
-                console.log("Time conflict scenario 3");
-                isConflict = true;
-            }
-
-            if ((selectedStart > apptStart) && (selectedEnd < apptEnd)) {
-                console.log("Time conflict scenario 4");
-                isConflict = true;
-            }
-
-            // /* If there is a conflict with the new appointment, then set the flag to true */
-            // if ((selectedStart > apptStart) && (selectedStart < apptEnd)) {
-            //     console.log("Time conflict scenario 1");
-            //     isConflict = true;
-            // }
-
-            // if ((selectedEnd > apptStart) && (selectedEnd < apptEnd)) {
-            //     console.log("Time conflict scenario 2");
-            //     isConflict = true;
-            // }
-
-            // if ((selectedStart < apptStart) && (selectedEnd > apptEnd)) {
-            //     console.log("Time conflict scenario 3");
-            //     isConflict = true;
-            // }
-
-            // if ((selectedStart > apptStart) && (selectedEnd < apptEnd)) {
-            //     console.log("Time conflict scenario 4");
-            //     isConflict = true;
-            // }
         }
-
-        console.log("isConflict? : "+isConflict);
 
         if (isConflict) {
             alert('This time slot is already booked for the selected provider');
             return;
         }
 
+        /* 5. Persist to backend */
         const appointmentData = {
             patientId: selectedPatient.id,
             providerId: providerId,
@@ -359,8 +363,13 @@ function AppointmentFormPopup() {
             }
 
             alert(isEditMode ? 'Appointment updated' : 'Appointment booked');
-            // if (window.opener) window.opener.postMessage('appointment-added', '*');
-            if (window.opener) window.opener.postMessage({ type: 'appointment-added', date: appointmentData.date }, '*');
+            if (window.opener) {
+                window.opener.postMessage({
+                type: 'appointment-added',
+                apptId, /* deleted id */
+                date: isoDate /* "YYYY-MM-DD" */
+                }, '*');
+            }
             window.close();
         } catch (err) {
             console.error('Save failed', err);
@@ -368,8 +377,9 @@ function AppointmentFormPopup() {
         }
     }; 
 
+
     /**
-     * Deletes the chosen appointment from the database, and sends message to main menu to update UI
+     * Delete the current appointment (edit mode). Notifies opener and closes.
      */
     const handleDeleteAppointment = async() => {
         try {
@@ -392,9 +402,11 @@ function AppointmentFormPopup() {
 
             /* Notify the parent window of sucessful deletion */
             if (window.opener) {
-            // window.opener.postMessage('appointment-deleted', '*');
-            window.opener.postMessage({ type: 'appointment-deleted', date: currentDate }, '*');
-
+                window.opener.postMessage({
+                type: 'appointment-deleted',
+                apptId, /* deleted id */
+                date: isoDate /* "YYYY-MM-DD" */
+                }, '*');
             }
 
             /* Close the popup window */
@@ -406,6 +418,8 @@ function AppointmentFormPopup() {
         }
     }
 
+
+    /* === Render === */
     return (
         <div className="appointment-form-popup">
         <div className="appointment-form-popup__container">
@@ -420,12 +434,6 @@ function AppointmentFormPopup() {
                         type="date"
                         value={isoDate}
                         disabled
-                        // type="date" 
-                        // type="datetime-local"
-                        // // defaultValue={new Date().toISOString().slice(0, 10)} 
-                        // // defaultValue={currentDate.slice(0,10)}
-                        // // value={`${isoDate}T00:00`}
-                        // defaultValue={`${isoDate}T${startTime}`}
                     />
 
                     <label>Start Time:</label>
@@ -502,8 +510,6 @@ function AppointmentFormPopup() {
                     <label>Date Time:</label>
                     <input
                     type="date"
-                    // value={new Date().toISOString().slice(0, 16)}
-                    // value={currentDate.slice(0,10)}
                     value={isoDate}
                     disabled
                     />
@@ -549,7 +555,7 @@ function AppointmentFormPopup() {
                             style={{ cursor: "pointer" }}
                         >
                             <td>{patient.lastname}, {patient.firstname}</td>
-                            <td>{formatPhone(patient.cellphone || patient.homephone || patient.workphone)}</td>
+                            <td>{patient.cellphone || patient.homephone || patient.workphone}</td>
                             <td>{patient.dob ? patient.dob.slice(0, 10) : ''}</td>
                             <td>{patient.email}</td>
                             <td>{patient.patient_status}</td>
@@ -572,3 +578,29 @@ function AppointmentFormPopup() {
 }
 
 export default AppointmentFormPopup;
+
+// console.log("");
+// console.log(" providerID " + providerId);
+// console.log("");
+// console.log("NUM OF APPTS: "+freshAppointments.length);
+// console.log("num of appointments: "+freshAppointments.length);
+// console.log("DURATION: " + durationNum);
+// console.log(" ");
+// console.log("currentBookedAppointmentStart: " + currentBookedAppointmentStart);
+// console.log("currentBookedAppointmentEnd: " + currentBookedAppointmentEnd);
+// console.log("newAppointmentStart: " + newAppointmentStart);
+// console.log("newAppointmentEnd: " + newAppointmentEnd);
+// console.log(" ");
+// console.log("isConflict? : "+isConflict);
+// console.log("Time conflict scenario 4");
+// alert("Time conflict scenario 4");
+// console.log("Time conflict scenario 3");
+// alert("Time conflict scenario 3");
+// console.log("Time conflict scenario 2");
+// alert("Time conflict scenario 2");
+// console.log("Time conflict scenario 1");
+// alert("Time conflict scenario 1");
+// console.log("dateParam: " + dateParam);
+// console.log("currentDate: " + currentDate);
+// console.log("isoDate: " + isoDate);
+// console.log("startTime: " + startTime);
