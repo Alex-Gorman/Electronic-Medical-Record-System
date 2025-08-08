@@ -1,68 +1,84 @@
+/**
+ * SearchPage.js
+ *
+ * Patient search UI for the EMR.
+ *
+ * Features:
+ *  - Search patients by name (supports "Last" or "Last, First")
+ *  - Search patients by Phone, DOB, Address, Health Insurance #, Email
+ *  - Link out to "Create Demographic" page
+ *
+ * Backend endpoint used (base: http://localhost:3002):
+ *  - GET /patients/search?keyword=<string>&mode=<"search_name"|"search_phone"|"search_dob"|"search_health_number"|"search_email"|"search_address">
+ *
+ * @file
+ * @module SearchPage
+ * @component SearchPage
+ * @example
+ *  Rendered by a route in your app:
+ * <Route path="/search" element={<SearchPage />} />
+ */
+
 import React, { useState } from 'react';
 import './SearchPage.css';
 import { useNavigate } from 'react-router-dom';
 
-function SearchPage() {
+/**
+ * Allowed search modes accepted by the backend.
+ * @typedef {'search_name'|'search_phone'|'search_dob'|'search_health_number'|'search_email'|'search_address'} SearchMode
+ */
 
-  /* Stores the current search term entered by the user in the input field */
+
+/**
+ * Shape of a patient row returned by the search API.
+ * Only fields referenced by this component are listed.
+ * @typedef {Object} Patient
+ * @property {number} id
+ * @property {string} lastname
+ * @property {string} firstname
+ * @property {string} [cellphone]
+ * @property {string} [homephone]
+ * @property {string} [workphone]
+ * @property {string} [dob]              // ISO date string "YYYY-MM-DD..."
+ * @property {string} [email]
+ * @property {string} [patient_status]
+ */
+
+
+/**
+ * Search page for finding patients by various fields. Has a textbox to type a value, and a dropdown menu to choose
+ * a field to search (name, phone, dob, health #, email, address). Displays list of patients who have this demographic
+ * info.
+ *
+ * @returns {JSX.Element}
+ */
+function SearchPage() {
+  /* ===== Component state ===== */
+  /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} */
   const [keyword, setKeyword] = useState('');
 
-  /* Stores the current search mode selected by the user */
+  /** @type {[SearchMode, React.Dispatch<React.SetStateAction<SearchMode>>]} */
   const [searchMode, setSearchMode] = useState('search_name');
 
-  /* Holds the array of patient search results from backend */
+  /** @type {[Patient[], React.Dispatch<React.SetStateAction<Patient[]>>]} */
   const [results, setResults] = useState([]);
 
   /* Allows redirection to different pages in the app */
   const navigate = useNavigate();
 
-  /**
-   * Handles the form submission for the patient search
-   * Sends GET request to the backend with the search keyword and then displays matching results in the table
-   */
-  const handleSubmit = async (e) => {
 
-    /* Prevent the page reloading (default form submission behaviour) */
-    e.preventDefault();
-
-    try {
-
-      /* Encode the keyword and send it to the backend API via a GET request */
-      const res = await fetch(`http://localhost:3002/patients/search?keyword=${encodeURIComponent(keyword)}&mode=${encodeURIComponent(searchMode)}`);
-
-      /* Parse the JSON response */
-      const data = await res.json();
-
-      /* Handle HTTP errors */
-      if (!res.ok) {
-        alert(data.error || 'Search failed'); 
-        return;
-      }
-
-      /* If the search was successful, store the results in the component state to make the table */
-      setResults(data);
-    } catch (err) {
-      /* Got an error, log error and notify user */
-      console.error(err);
-      alert('Failed to fetch results');
-    }
-  };
+  /* ===== Helpers ===== */
 
 
   /**
-   * Handles the "Create Demographic" button click by redirecting to the create-demographic page
+   * Format a 10-digit phone number into "XXX-XXX-XXXX".
+   * Returns the original string if it doesn't look like 10 digits.
+   * 
+   * @param {*} number 
+   * @returns {string}
    */
-  const handleCreateClick = () => {
-    navigate('/create-demographic');
-  };
-
-
-  /**
-   * Format a 10-digit phone number into XXX-XXX-XXXX
-   */
-   function formatPhone(number) {
-
-    /* If no phone number, return an empty string */
+  function formatPhone(number) {
+    /* Param validation, if no phone number, return an empty string */
     if (!number) return '';
 
     /* Remove all non-digit characters */
@@ -73,11 +89,12 @@ function SearchPage() {
 
     /* Slice the cleaned number into 3 parts, and put dashes in to give format XXX-XXX-XXXX */
     return `${cleanedNumber.slice(0,3)}-${cleanedNumber.slice(3,6)}-${cleanedNumber.slice(6)}`;
-   } 
-
+  } 
 
   /**
-   * Returns input placeholder text depending on selected search mode
+   * Placeholder text based on active search mode.
+   *
+   * @returns {string}
    */
   function getPlaceholder() {
     switch (searchMode) {
@@ -97,6 +114,57 @@ function SearchPage() {
         return 'Last, First';
     }
   }
+
+
+  /* ===== Handlers ===== */
+
+
+  /**
+   * Submit handler for the search form.
+   * Sends a GET to `/patients/search` with `keyword` and `mode`,
+   * then updates the results table.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e
+   * @returns {Promise<void>}
+   */
+  const handleSubmit = async (e) => {
+    /* Prevent the page reloading (default form submission behaviour) */
+    e.preventDefault();
+
+    try {
+
+      /* Encode the keyword and send it to the backend API via a GET request */
+      const res = await fetch(`http://localhost:3002/patients/search?keyword=${encodeURIComponent(keyword)}&mode=${encodeURIComponent(searchMode)}`);
+
+      /** @type {Patient[]|{error: string}} */
+      const data = await res.json();
+
+      /* Handle HTTP errors */
+      if (!res.ok) {
+        alert(data.error || 'Search failed'); 
+        return;
+      }
+
+      /* If the search was successful, store the results in the component state to make the table */
+      setResults(Array.isArray(data) ? data : []);
+    } catch (err) {
+      /* Got an error, log error and notify user */
+      console.error(err);
+      alert('Failed to fetch results');
+    }
+  };
+
+
+  /**
+   * Navigate to the "Create Demographic" page.
+   */
+  const handleCreateClick = () => {
+    navigate('/create-demographic');
+  };
+
+
+  /* === Render === */
+
 
   return (
     <>
