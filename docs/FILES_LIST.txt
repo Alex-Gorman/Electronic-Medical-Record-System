@@ -5,25 +5,25 @@ Commenting & Docs & Testing
 
 BACKEND
 
-1. server.js -> ❌ & ❌ & ❌
+1. server.js -> ❌ & ❌ & ❌ -> 759 Lines
 
 FRONTEND
 
-2. AppointmentFormPopup.js -> ✅ & ✅ & ❌
+2. AppointmentFormPopup.js -> ✅ & ✅ & ❌ -> 580 Lines
 
-3. CalendarPopup.js -> ❌ & ❌ & ❌
+3. CalendarPopup.js -> ❌ & ❌ & ❌ -> 31 Lines
 
-4. MasterRecord.js -> ❌ & ❌ & ❌
+4. MasterRecord.js -> ❌ & ❌ & ❌ -> 448 Lines
 
-5. CreateDemographic.js -> ❌ & ❌ & ❌
+5. CreateDemographic.js -> ❌ & ❌ & ❌ -> 219 Lines
 
-6. LoginPage.js -> ❌ & ❌ & ❌
+6. LoginPage.js -> ❌ & ❌ & ❌ -> 142 Lines
 
-7. MainMenu.js -> ❌ & ❌ & ❌
+7. MainMenu.js -> ❌ & ❌ & ❌ -> 677 Lines
 
-8. Navbar.js -> ❌ & ❌ & ❌
+8. Navbar.js -> ❌ & ❌ & ❌ -> 77 Lines
 
-9. SearchPage.js -> ❌ & ❌ & ❌
+9. SearchPage.js -> ✅ & ✅ & ❌ -> 190 Lines
 
-10. App.js -> ❌ & ❌ & ❌
+10. App.js -> ❌ & ❌ & ❌ -> 55 Lines
 
