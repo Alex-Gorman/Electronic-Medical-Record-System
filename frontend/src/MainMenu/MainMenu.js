@@ -86,27 +86,52 @@ function MainMenu() {
     loadDoctors();
   }, []);
 
+  // useEffect(() => {
+  //   const handler = event => {
+  //     const msg = event.data;
+  //     if (msg?.type === 'date-selected' && msg.timestamp) {
+  //       setCurrentDate(new Date(msg.timestamp));
+  //     }
+  //     if (msg?.type === 'appointment-added') {
+  //       // 1) switch the calendar to the date you just booked on
+  //       // setCurrentDate(new Date(msg.date));
+  //       setCurrentDate(new Date(msg.date + 'T00:00'));
+  //       // 2) then fetch that day’s appointments
+  //       fetchAppointments();
+  //     }
+  //     if (msg?.type === 'appointment-deleted') {
+  //       fetchAppointments();
+  //     }
+  //   };
+
+  //   window.addEventListener('message', handler);
+  //   return () => window.removeEventListener('message', handler);
+  // }, []);
+
   useEffect(() => {
-    const handler = event => {
+    const handler = (event) => {
       const msg = event.data;
-      if (msg?.type === 'date-selected' && msg.timestamp) {
-        setCurrentDate(new Date(msg.timestamp));
-      }
-      if (msg?.type === 'appointment-added') {
-        // 1) switch the calendar to the date you just booked on
-        // setCurrentDate(new Date(msg.date));
-        setCurrentDate(new Date(msg.date + 'T00:00'));
-        // 2) then fetch that day’s appointments
+      if (msg?.type === 'appointment-deleted') {
+        const deletedId = String(msg.apptId);
+        const viewDateIso = currentDate.toLocaleDateString('en-CA').slice(0,10);
+
+        // only update if the message is for the date we’re viewing
+        if (!msg.date || msg.date === viewDateIso) {
+          setAppointments(prev => prev.filter(a => String(a.id) !== deletedId));
+        }
+
+        // optional safety net: do a refetch in background
         fetchAppointments();
       }
-      if (msg?.type === 'appointment-deleted') {
+
+      if (msg?.type === 'appointment-added') {
         fetchAppointments();
       }
     };
-
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, []);
+  }, [currentDate]);
+
 
 
   // /* Take a message from the add appointment window to refresh the timesheet and grab all new appointments */
