@@ -45,6 +45,9 @@ docker attach emr-frontend
 http://localhost:3000
 ```
 
+## Documentation
+- [AppointmentFormPopup component](/docs/AppointmentFormPopup.md)
+
 
 
 
