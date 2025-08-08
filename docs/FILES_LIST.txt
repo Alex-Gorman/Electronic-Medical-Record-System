@@ -25,5 +25,5 @@ FRONTEND
 
 9. SearchPage.js -> ✅ & ✅ & ❌ -> 190 Lines
 
-10. App.js -> ❌ & ❌ & ❌ -> 55 Lines
+10. App.js -> ✅ & ✅ & ❌ -> 55 Lines
 
