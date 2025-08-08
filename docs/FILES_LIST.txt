@@ -1,0 +1,29 @@
+Commenting & Docs & Testing
+✅
+❌
+
+
+BACKEND
+
+1. server.js -> ❌ & ❌ & ❌
+
+FRONTEND
+
+2. AppointmentFormPopup.js -> ✅ & ✅ & ❌
+
+3. CalendarPopup.js -> ❌ & ❌ & ❌
+
+4. MasterRecord.js -> ❌ & ❌ & ❌
+
+5. CreateDemographic.js -> ❌ & ❌ & ❌
+
+6. LoginPage.js -> ❌ & ❌ & ❌
+
+7. MainMenu.js -> ❌ & ❌ & ❌
+
+8. Navbar.js -> ❌ & ❌ & ❌
+
+9. SearchPage.js -> ❌ & ❌ & ❌
+
+10. App.js -> ❌ & ❌ & ❌
+
