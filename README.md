@@ -47,7 +47,7 @@ http://localhost:3000
 
 ## Documentation
 - [AppointmentFormPopup component](/docs/AppointmentFormPopup.md)
-- [SearchPage component] (/docs/SearchPage.md)
+- [SearchPage component](/docs/SearchPage.md)
 
 
 
