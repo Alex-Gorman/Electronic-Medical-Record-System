@@ -21,7 +21,7 @@ FRONTEND
 
 7. MainMenu.js -> ❌ & ❌ & ❌ -> 677 Lines
 
-8. Navbar.js -> ❌ & ❌ & ❌ -> 77 Lines
+8. Navbar.js -> ✅ & ✅ & ❌ -> 77 Lines
 
 9. SearchPage.js -> ✅ & ✅ & ❌ -> 190 Lines
 

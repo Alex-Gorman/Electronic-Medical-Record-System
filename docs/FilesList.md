@@ -4,7 +4,7 @@
 
 | File         | Commenting | DOCS  | Testing | 
 | ------------ | ------     | ------| ------- | 
-| `server.js`  | ✅         | ✅    |  ❌      | 
+| `server.js`  | ❌         | ❌    |  ❌      | 
 
 # FRONTEND
 
@@ -16,6 +16,6 @@
 | `CreateDemographic.js`    | ❌         | ❌     |  ❌     |
 | `LoginPage.js`            | ❌         | ❌     |  ❌     |
 | `MainMenu.js`             | ❌         | ❌     |  ❌     |
-| `Navbar.js`               | ❌         | ❌     |  ❌     |
+| `Navbar.js`               | ✅         | ✅     |  ❌     |
 | `SearchPage.js`           | ✅         | ✅     |  ❌     |
 | `App.js`                  | ✅         | ✅     |  ❌     |
