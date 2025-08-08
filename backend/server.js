@@ -461,31 +461,77 @@ function startServer(connection) {
    * GET /appointments
    * Returns all appointments for a given date
    */
-  app.get('/appointments', (req, res) => {
-    const { date } = req.query;
+  // In server.js
 
-    if (!date) return res.status(400).json({ error: 'Date is required' });
+app.get('/appointments', (req, res) => {
+  const { date, providerId } = req.query;
 
-    const query = `
-      SELECT
-        a.id, a.start_time, a.duration_minutes, a.reason, a.status, a.patient_id,
-        p.firstname, p.lastname,
-        d.name as provider_name
-      FROM appointments a
-      JOIN patients p ON a.patient_id = p.id
-      JOIN doctors d ON a.provider_id = d.id
-      WHERE appointment_date = ?
-      `;
-    
-    connection.query(query, [date], (err, results) => {
-      if (err) {
-        console.error('Failed to fetch appointments:', err.message);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json(results);
-    });
-      
+  if (!date) {
+    return res.status(400).json({ error: 'Date is required' });
+  }
+
+  // Start with the base query filtering by date
+  let sql = `
+    SELECT
+      a.id,
+      a.start_time,
+      a.duration_minutes,
+      a.reason,
+      a.status,
+      a.patient_id,
+      p.firstname,
+      p.lastname,
+      d.name AS provider_name
+    FROM appointments a
+    JOIN patients p ON a.patient_id = p.id
+    JOIN doctors  d ON a.provider_id  = d.id
+    WHERE a.appointment_date = ?
+  `;
+  const params = [date];
+
+  // If providerId is passed, narrow by provider
+  if (providerId) {
+    sql += ` AND a.provider_id = ?`;
+    params.push(providerId);
+  }
+
+  // Optional: keep your ordering
+  sql += ` ORDER BY a.start_time`;
+
+  connection.query(sql, params, (err, results) => {
+    if (err) {
+      console.error('Failed to fetch appointments:', err.message);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
   });
+});
+
+  // app.get('/appointments', (req, res) => {
+  //   const { date } = req.query;
+
+  //   if (!date) return res.status(400).json({ error: 'Date is required' });
+
+  //   const query = `
+  //     SELECT
+  //       a.id, a.start_time, a.duration_minutes, a.reason, a.status, a.patient_id,
+  //       p.firstname, p.lastname,
+  //       d.name as provider_name
+  //     FROM appointments a
+  //     JOIN patients p ON a.patient_id = p.id
+  //     JOIN doctors d ON a.provider_id = d.id
+  //     WHERE appointment_date = ?
+  //     `;
+    
+  //   connection.query(query, [date], (err, results) => {
+  //     if (err) {
+  //       console.error('Failed to fetch appointments:', err.message);
+  //       return res.status(500).json({ error: 'Database error' });
+  //     }
+  //     res.json(results);
+  //   });
+      
+  // });
 
   /**
    * PUT /appointments/:id/status
