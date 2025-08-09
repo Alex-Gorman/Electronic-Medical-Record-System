@@ -15,7 +15,7 @@ FRONTEND
 
 4. MasterRecord.js -> ✅ & ✅ & ❌ -> 448 Lines
 
-5. CreateDemographic.js -> ❌ & ❌ & ❌ -> 219 Lines
+5. CreateDemographic.js -> ✅ & ✅ & ❌ -> 219 Lines
 
 6. LoginPage.js -> ✅ & ✅ & ❌ -> 142 Lines
 

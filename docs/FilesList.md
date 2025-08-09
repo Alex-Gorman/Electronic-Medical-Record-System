@@ -13,7 +13,7 @@
 | `AppointmentFormPopup.js` | ✅         | ✅     |  ❌     |
 | `CalendarPopup.js`        | ✅         | ✅     |  ❌     |
 | `MasterRecord.js`         | ✅         | ✅     |  ❌     |
-| `CreateDemographic.js`    | ❌         | ❌     |  ❌     |
+| `CreateDemographic.js`    | ✅         | ✅     |  ❌     |
 | `LoginPage.js`            | ✅         | ✅     |  ❌     |
 | `MainMenu.js`             | ❌         | ❌     |  ❌     |
 | `Navbar.js`               | ✅         | ✅     |  ❌     |
