@@ -50,6 +50,7 @@ http://localhost:3000
 - [SearchPage component](/docs/SearchPage.md)
 - [App - Application Shell & Routing](/docs/App.md)
 - [Navbar component](/docs/Navbar.md)
+- [CalendarPopup component](/docs/CalendarPopup.md)
 
 
 
