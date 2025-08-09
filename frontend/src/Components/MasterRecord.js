@@ -1,22 +1,117 @@
+/**
+ * @file MasterRecord.js
+ * @module MasterRecord
+ * @description
+ * Patient “Master Record” view. Fetches a single patient’s demographics and allows
+ * inline editing with client-side validation for key fields (health number, version,
+ * email, postal code). Also fetches a list of doctors for the Family MD selector.
+ *
+ * Backend endpoints used (base: http://localhost:3002):
+ * - GET    /patients/:id            → load patient details
+ * - PUT    /patients/:id            → save updates
+ * - GET    /doctors                 → list of doctor names (for dropdown)
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import './MasterRecord.css';
 
+/**
+ * @typedef {Object} Patient
+ * @property {number|string} id
+ * @property {string} lastname
+ * @property {string} firstname
+ * @property {string} [preferredname]
+ * @property {string} [sex]
+ * @property {string} dob              ISO string `"YYYY-MM-DD"` or `"YYYY-MM-DDTHH:mm:ss.sssZ"`
+ * @property {string} [homephone]
+ * @property {string} [cellphone]
+ * @property {string} [workphone]
+ * @property {string} [address]
+ * @property {string} [city]
+ * @property {string} [province]
+ * @property {string} [postalcode]
+ * @property {string} [email]
+ * @property {string} [healthNumber]   // display alias for healthinsurance_number
+ * @property {string} [healthVersion]  // display alias for healthinsurance_version_code
+ * @property {string} [status]         // display alias for patient_status
+ * @property {string} [familyPhysician]
+ */
+
+/**
+ * Editable form model (mirrors UI fields).
+ * @typedef {Object} PatientForm
+ * @property {string} [lastname]
+ * @property {string} [firstname]
+ * @property {string} [preferredname]
+ * @property {string} [sex]
+ * @property {string} [dob]                     // "YYYY-MM-DD"
+ * @property {string} [homephone]
+ * @property {string} [cellphone]
+ * @property {string} [workphone]
+ * @property {string} [address]
+ * @property {string} [city]
+ * @property {string} [province]
+ * @property {string} [postalcode]
+ * @property {string} [email]
+ * @property {string} [healthNumber]            // exactly 10 digits
+ * @property {string} [healthVersion]           // two uppercase letters
+ * @property {string} [status]
+ * @property {string} [familyPhysician]
+ */
+
+/**
+ * MasterRecord component
+ *
+ * Displays a patient’s details with an edit mode. On save, it performs a PUT to the backend
+ * and re-fetches the canonical record to keep the UI in sync with the database.
+ *
+ * @returns {JSX.Element}
+ */
 function MasterRecord() {
+    /* ===== URL param parsing ===== */
     const {search} = useLocation();
     const params = new URLSearchParams(search);
+
+    /* Patient id to fetch (string from query params). */
     const patientId = params.get('patientId');
 
+    /* ===== Component state ===== */
+
+    /** @type {[Patient|null, Function]} */
     const [patient, setPatient] = useState(null);
+
+    /** @type {[string|null, Function]} */
     const [error, setError] = useState(null);
+
+    /** @type {[boolean, Function]} */
     const [isEditing, setIsEditing] = useState(false);
+
+    /** @type {[PatientForm, Function]} */
     const [form, setForm] = useState({});
+
+    /**
+     * List of doctors for the Family MD dropdown.
+     * Backend currently returns `string[]` of names.
+     * @type {[string[], Function]}
+     */
     const [doctors, setDoctors] = useState([]);
+
+    /**
+     * Per-field validation errors for the edit form.
+     * Keys correspond to `PatientForm` keys.
+     * @type {[Record<string,string>, Function]}
+     */
     const [fieldErrors, setFieldErrors] = useState({})
 
-    /* 1. Fetch the patient info */
+    /* ===== Effects ===== */
+    
+    /**
+     * 1. Fetch the patient info.
+     * - Requires `patientId` in the query string.
+     * - Trims DOB to `YYYY-MM-DD` for friendly display.
+     */
     useEffect(() => {
-        /* If no patient ID, give an error */
         if (!patientId) {
             setError('No patient ID was provided');
             return;
@@ -33,7 +128,7 @@ function MasterRecord() {
             .then(data => {
                 setPatient({ 
                     ...data, 
-                    dob: data.dob.slice(0,10)    // trim the timestamp
+                    dob: data.dob.slice(0,10)   /* trim the timestamp */
                 }); 
             })
             .catch(err => {
@@ -42,7 +137,10 @@ function MasterRecord() {
             }); 
         }, [patientId]);
     
-    /* 2. Fetch the list of Doctors */
+
+    /**
+     * 2. Fetch the list of Doctors (for family MD select)
+     */
     useEffect(() => {
         fetch(`http://localhost:3002/doctors`)
         .then(res => {
@@ -60,74 +158,86 @@ function MasterRecord() {
         })
     }, []);    
 
-    /* 3. When the form.healthNumber or form.healthVersion change, re-validate they are correct format */ 
+
+    /**
+     * 3. Live-validate form fields when they change:
+     * - healthNumber: exactly 10 digits
+     * - healthVersion: exactly two uppercase letters
+     * - email: basic RFC-style shape
+     * - postalcode: Canadian format A1A 1A1 or A1A1A1
+     */
     useEffect(() => {
         const errs = {}
 
-        /* healthNumber must be exactly 10 digits */
         if (form.healthNumber != null) {
             if (!/^\d{10}$/.test(form.healthNumber)) {
                 errs.healthNumber = 'Must be exactly 10 digits'
             }
         }
-
-        /* healthVersion must be exactly two uppercase letters */
         if (form.healthVersion != null) {
             if (!/^[A-Z]{2}$/.test(form.healthVersion)) {
                 errs.healthVersion = 'Must be exactly two uppercase letters'
             }
         }
-
-        /* email must look like aaa@bbb.ccc */
         if (form.email != null) {
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
                 errs.email = 'Invalid email address'
             }
         }
-
-        /* Canadian postal code: A1A 1A1 or A1A1A1 */
         if (form.postalcode != null) {
             if (!/^[A-Za-z]\d[A-Za-z][ ]?\d[A-Za-z]\d$/.test(form.postalcode)) {
                 errs.postalcode = 'Invalid Canadian postal code'
             }
         }
-
         setFieldErrors(errs)
     }, [form.healthNumber, form.healthVersion, form.email, form.postalcode]);
+
+
+    /* ===== Early rendering for error/loading ===== */
     
+
     /* If error just render the error message to the page */    
     if (error) return <div className="master-record-error">{error}</div>;
 
     /* If no patient, just render Loading to the page, until patient is fetched */
     if (!patient) return <div className="master-record-loading">Loading</div>;
 
+
+    /* ===== Derived values ===== */
+
+
     /* Get the age of the patient */
     const age = new Date().getFullYear() - new Date(patient.dob).getFullYear();
 
-    /* Exit Master Record button handler */
+
+    /* ===== Handlers ===== */
+    
+
+    /**
+     * Close the Master Record window.
+     * @returns {void}
+     */
     const handleExitMasterRecordButton = () => {
         window.close();
     };
 
 
     /**
-     * When the input in the form changes, this function will run
-     * @param {*} event 
+     * Controlled input change handler for the edit form.
+     * Copies the previous form state and updates the changed field.
+     * 
+     * @param {React.ChangeEvent<HTMLInputElement|HTMLSelectElement>} event
+     * @returns {void}
      */
     function handleChange(event) {
  
-        /* Get the element that fired the event */
+        /** @type {HTMLInputElement|HTMLSelectElement} */
         const target = event.target;
-
-        /* Read the name of the attribute being edited */
         const inputName = target.name;
-
-        /* Get the value of the attribute getting edited */
         const inputValue = target.value;
 
         /* Update form state by taking previous state object, copying all existing fields, and overwriting the one field that changed */
         setForm(previousForm => {
-            
             /* Shallow copy of the old form */
             const newForm = { ...previousForm };
 
@@ -139,14 +249,26 @@ function MasterRecord() {
         });
     }
 
-    /* When the cancel button is pressed */
+
+    /**
+     * Cancel editing: revert form back to the last saved patient state.
+     * @returns {void}
+     */
     const handleCancel = () => {
         /* reset form data back to last saved patient data */
         setForm(patient);
         setIsEditing(false);
     };
 
-    /* Handle the clicking of the save button, when changing patient info */
+
+    /**
+     * Persist demographic edits to the backend.
+     * - Validates there are no fieldErrors.
+     * - Maps form fields to backend column names.
+     * PUTs the update and then re-fetches the patient to refresh local state.
+     * 
+     * @returns {Promise<void>}
+     */
     const handleSave = async () => {
 
         /* Block the save attempt if there are any errors in the demographic fields */
@@ -209,6 +331,7 @@ function MasterRecord() {
 
     }
 
+    /* === Render === */
 
     return (
         <div className="master-record container">
