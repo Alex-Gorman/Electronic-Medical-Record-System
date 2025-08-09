@@ -51,6 +51,11 @@ http://localhost:3000
 - [App - Application Shell & Routing](/docs/App.md)
 - [Navbar component](/docs/Navbar.md)
 - [CalendarPopup component](/docs/CalendarPopup.md)
+- [LoginPage component](/docs/LoginPage.md)
+- [MainMenu component](/docs/MainMenu.md)
+- [MasterRecord component](/docs/MasterRecord.md)
+- [CreateDemographic component](/docs/CreateDemographic.md)
+- [Server component](/docs/Server.md)
 
 
 
