@@ -13,7 +13,7 @@ FRONTEND
 
 3. CalendarPopup.js -> ✅ & ✅ & ❌ -> 31 Lines
 
-4. MasterRecord.js -> ❌ & ❌ & ❌ -> 448 Lines
+4. MasterRecord.js -> ✅ & ✅ & ❌ -> 448 Lines
 
 5. CreateDemographic.js -> ❌ & ❌ & ❌ -> 219 Lines
 
