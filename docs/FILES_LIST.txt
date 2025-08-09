@@ -17,7 +17,7 @@ FRONTEND
 
 5. CreateDemographic.js -> ❌ & ❌ & ❌ -> 219 Lines
 
-6. LoginPage.js -> ❌ & ❌ & ❌ -> 142 Lines
+6. LoginPage.js -> ✅ & ✅ & ❌ -> 142 Lines
 
 7. MainMenu.js -> ❌ & ❌ & ❌ -> 677 Lines
 

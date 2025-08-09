@@ -14,7 +14,7 @@
 | `CalendarPopup.js`        | ✅         | ✅     |  ❌     |
 | `MasterRecord.js`         | ❌         | ❌     |  ❌     |
 | `CreateDemographic.js`    | ❌         | ❌     |  ❌     |
-| `LoginPage.js`            | ❌         | ❌     |  ❌     |
+| `LoginPage.js`            | ✅         | ✅     |  ❌     |
 | `MainMenu.js`             | ❌         | ❌     |  ❌     |
 | `Navbar.js`               | ✅         | ✅     |  ❌     |
 | `SearchPage.js`           | ✅         | ✅     |  ❌     |
