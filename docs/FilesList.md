@@ -11,7 +11,7 @@
 | File                      | Commenting | DOCS  | Testing | 
 | ------------------------- | ---------- | ----- | ------- | 
 | `AppointmentFormPopup.js` | ✅         | ✅     |  ❌     |
-| `CalendarPopup.js`        | ❌         | ❌     |  ❌     |
+| `CalendarPopup.js`        | ✅         | ✅     |  ❌     |
 | `MasterRecord.js`         | ❌         | ❌     |  ❌     |
 | `CreateDemographic.js`    | ❌         | ❌     |  ❌     |
 | `LoginPage.js`            | ❌         | ❌     |  ❌     |

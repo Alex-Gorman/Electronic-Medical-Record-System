@@ -11,7 +11,7 @@ FRONTEND
 
 2. AppointmentFormPopup.js -> ✅ & ✅ & ❌ -> 580 Lines
 
-3. CalendarPopup.js -> ❌ & ❌ & ❌ -> 31 Lines
+3. CalendarPopup.js -> ✅ & ✅ & ❌ -> 31 Lines
 
 4. MasterRecord.js -> ❌ & ❌ & ❌ -> 448 Lines
 
