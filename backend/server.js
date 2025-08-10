@@ -458,37 +458,53 @@ app.get('/patients/search', (req, res) => {
     });
   });
 
-
-
-  /**
-   * POST /patients
-   * Inserts a new patient record into the patients table
-   */ 
   app.post('/patients', (req, res) => {
-
-    /* Patient info to be stored */
     const patient = req.body;
-
-    /* An array of all the field names from the patient object */
     const fields = Object.keys(patient);
-
-    /* An array of all the corresponding values from the patient object */
     const values = Object.values(patient);
-
-    /* Placeholders for the parameterized SQL Query */
     const placeholders = fields.map(() => '?').join(', ');
+    const sql = `INSERT INTO patients (${fields.join(', ')}) VALUES (${placeholders})`;
 
-    /* SQL Query to insert the patient values into the patients table */
-    const query = `INSERT INTO patients (${fields.join(', ')}) VALUES (${placeholders})`;
-
-    connection.query(query, (err, results) => {
+    connection.query(sql, values, (err, result) => {
       if (err) {
         console.error('Failed to insert patient:', err.message);
-        return res.status(500).json({ error: 'Failed to insert patient:' });
+        return res.status(500).json({ error: 'Failed to insert patient' });
       }
-      res.status(201).json({ message: 'Patient added successfully', id: result.insertId});
+      res.status(201).json({ message: 'Patient added successfully', id: result.insertId });
     });
   });
+
+
+
+  // /**
+  //  * POST /patients
+  //  * Inserts a new patient record into the patients table
+  //  */ 
+  // app.post('/patients', (req, res) => {
+
+  //   /* Patient info to be stored */
+  //   const patient = req.body;
+
+  //   /* An array of all the field names from the patient object */
+  //   const fields = Object.keys(patient);
+
+  //   /* An array of all the corresponding values from the patient object */
+  //   const values = Object.values(patient);
+
+  //   /* Placeholders for the parameterized SQL Query */
+  //   const placeholders = fields.map(() => '?').join(', ');
+
+  //   /* SQL Query to insert the patient values into the patients table */
+  //   const query = `INSERT INTO patients (${fields.join(', ')}) VALUES (${placeholders})`;
+
+  //   connection.query(query, (err, results) => {
+  //     if (err) {
+  //       console.error('Failed to insert patient:', err.message);
+  //       return res.status(500).json({ error: 'Failed to insert patient:' });
+  //     }
+  //     res.status(201).json({ message: 'Patient added successfully', id: result.insertId});
+  //   });
+  // });
 
   /**
    * POST /appointments
