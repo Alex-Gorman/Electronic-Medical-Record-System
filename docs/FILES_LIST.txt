@@ -5,7 +5,7 @@ Commenting & Docs & Testing
 
 BACKEND
 
-1. server.js -> ❌ & ❌ & ❌ -> 759 Lines
+1. server.js -> ✅ & ✅ & ❌ -> 759 Lines
 
 FRONTEND
 

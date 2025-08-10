@@ -4,7 +4,7 @@
 
 | File         | Commenting | DOCS  | Testing | 
 | ------------ | ------     | ------| ------- | 
-| `server.js`  | ❌         | ❌    |  ❌      | 
+| `server.js`  | ✅         | ✅    |  ❌      | 
 
 # FRONTEND
 
