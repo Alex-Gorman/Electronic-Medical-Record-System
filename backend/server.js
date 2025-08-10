@@ -1,13 +1,42 @@
 /* eslint-disable no-undef, no-unused-vars */
-// server.js
+
+/**
+ * @file server.js
+ * @module server
+ * @description
+ * Express + MySQL backend for the EMR app. Provides authentication, patient
+ * demographics CRUD, doctor list, and appointment scheduling APIs.
+ *
+ * Tables auto-create on boot:
+ * - users
+ * - patients
+ * - doctors
+ * - appointments
+ *
+ * Base URL: http://0.0.0.0:3002
+ */
+
 const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
+/** @constant {number} */
 const PORT = 3002;
+
+/** @constant {string} */
 const HOST = '0.0.0.0';
 
+/**
+ * MySQL connection config.
+ * @typedef {Object} DbConfig
+ * @property {string} host
+ * @property {string} user
+ * @property {string} password
+ * @property {string} database
+ */
+
+/** @type {DbConfig} */
 const DB_CONFIG = {
   host: 'mysql1',
   user: 'root',
@@ -15,13 +44,14 @@ const DB_CONFIG = {
   database: 'emr_app_db',
 };
 
+/** @type {{username:string,password:string}[]} */
 const DEFAULT_USERS = [
   { username: 'Admin', password: 'Admin1234' },
   { username: 'jsmith', password: 'smith1234' },
   { username: 'gpaul', password: 'paul1234' },
 ];
 
-/* Insert default doctors */
+/* Default doctor rows for seeding */
 const defaultDoctors = [
   ['Dr. Wong'],
   ['Dr. Smith'],
@@ -31,13 +61,15 @@ const DEFAULT_PATIENTS = require('./defaultPatients');
 
 
 /**
- * Attempts to connect to the MySQL database with retry logic
- * Retries connection with a limited number of times if initial attempts fail
- * 
- * @param {number} retries - Number of remaining retries
- * @param {number} delay - Delay between retries in milliseconds
+ * Attempt a MySQL connection with retry logic.
+ * On success, starts the HTTP server.
+ *
+ * @param {number} [retries=10] - Remaining attempts.
+ * @param {number} [delay=2000] - Delay between attempts (ms).
+ * @returns {void}
  */
 function connectWithRetry(retries = 10, delay = 2000) {
+  /** @type {import('mysql2').Connection} */
   const connection = mysql.createConnection(DB_CONFIG);
 
   connection.connect((err) => {
@@ -61,15 +93,14 @@ function connectWithRetry(retries = 10, delay = 2000) {
 }
 
 /**
- * Initializes the database by creating the necessary tables if they don't exist
- * This includes 'users' and 'patients' tables used by the application
- * 
- * @param {mysql.Connection} connection - The MySQL connection instance
- */ 
+ * Create application tables (idempotent) and seed default data.
+ *
+ * @param {import('mysql2').Connection} connection - Active MySQL connection.
+ * @returns {void}
+ */
 function initializeDatabase(connection) {
-
   /* Tables to be created */
-  const queries = [
+  const ddlStatements = [
     `CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
       username VARCHAR(255) NOT NULL UNIQUE,
@@ -115,9 +146,8 @@ function initializeDatabase(connection) {
   ];
 
 
-
-  /* For each query create the table if it doesn't exist */
-  queries.forEach((query) => {
+  /* Create Tables */
+  ddlStatements.forEach((query) => {
     connection.query(query, (err) => {
       if (err) throw err;
     });
@@ -125,8 +155,7 @@ function initializeDatabase(connection) {
   console.log('Tables initialized.');
 
 
-
-  /* Insert the default user info into the 'users' table */
+  /* Seed users */
   DEFAULT_USERS.forEach(({ username, password}) => {
     connection.query(
       'INSERT IGNORE INTO users (username, password) VALUES (?, ?)',
@@ -138,8 +167,7 @@ function initializeDatabase(connection) {
   console.log('Default users inserted (if not already present).');
 
 
-
-  /* Insert sample patient records into 'patients' table */
+  /* Seed patients */
   DEFAULT_PATIENTS.forEach((patient) => {
     const fields = Object.keys(patient);
     const values = Object.values(patient);
@@ -156,8 +184,7 @@ function initializeDatabase(connection) {
   console.log('Default patients inserted (if not already present).');
 
 
-
-  /* Insert default doctors into 'doctors' table */
+  /* Seed doctors */
   connection.query(
     'INSERT IGNORE INTO doctors (name) VALUES ?',
     [defaultDoctors],
@@ -172,32 +199,41 @@ function initializeDatabase(connection) {
 }
 
 /**
- * Initializes and starts the Express server.
+ * Spin up the Express app and register routes.
  * Sets up middleware for CORS & JSON parsing
  * Initializes the database tables
- * Defines routes for basic health check and login
  * 
- * @param {mysql.Connection} connection - Active MySQL connection used by route handlers
+ * @param {import('mysql2').Connection} connection - Active MySQL connection.
+ * @returns {void}
  */
 function startServer(connection) {
   const app = express();
 
+  /** Middleware */
   app.use(cors());
   app.use(bodyParser.json());
 
+  /** Health Check */
   app.get('/', (_, res) => res.send('Welcome to MYSQL with Docker'));
 
+  /** Ensure DB objects exist */
   initializeDatabase(connection);
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // Auth
+  // ────────────────────────────────────────────────────────────────────────────
 
 
   /**
    * POST /login
-   * Verifies if the user provided username & password exist the database table users
-   * Responds with a success message or an error status
+   * Authenticate by username/password.
+   *Responds with a success message or an error status
+   * 
+   * @param {string} req.body.username
+   * @param {string} req.body.password
+   * @returns {200|400|401|500} JSON
    */
    app.post('/login', (req, res) => {
-
     const username = req.body.username;
     const password = req.body.password;
 
@@ -216,248 +252,138 @@ function startServer(connection) {
     });
    }); 
 
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Patients: search & CRUD
+  // ────────────────────────────────────────────────────────────────────────────
+
+
    /**
- * GET /patients/search
- * Supports:
- *  - Name: "Last" (prefix on last) OR "Last, First" (exact last + first prefix)
- *  - Phone, DOB, Health number, Email, Address (unchanged)
- */
-app.get('/patients/search', (req, res) => {
-  const keyword = (req.query.keyword || '').trim();
-  const mode = req.query.mode || 'search_name';
-
-  if (!keyword) {
-    return res.status(400).json({ error: 'Keyword required' });
-  }
-
-  let query = '';
-  let params = [];
-
-  switch (mode) {
-    case 'search_name': {
-      // Split on comma for "Last, First"
-      const [lastRaw, firstRaw] = keyword.split(',').map(s => (s || '').trim());
-
-      if (firstRaw) {
-        // "Last, First" -> exact match on last, prefix on first
-        query = `
-          SELECT * FROM patients
-          WHERE LOWER(lastname) = LOWER(?)
-            AND LOWER(firstname) LIKE LOWER(CONCAT(?, '%'))
-          ORDER BY lastname, firstname
-          LIMIT 50
-        `;
-        params = [lastRaw, firstRaw];
-      } else if (lastRaw) {
-        // "Last" only -> prefix on last name
-        query = `
-          SELECT * FROM patients
-          WHERE LOWER(lastname) LIKE LOWER(CONCAT(?, '%'))
-          ORDER BY lastname, firstname
-          LIMIT 50
-        `;
-        params = [lastRaw];
-      } else {
-        return res.status(400).json({ error: 'Invalid name format' });
-      }
-      break;
-    }
-
-    case 'search_phone': {
-      query = `
-        SELECT * FROM patients
-        WHERE homephone LIKE ? OR cellphone LIKE ? OR workphone LIKE ?
-        ORDER BY lastname, firstname
-        LIMIT 50
-      `;
-      params = [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`];
-      break;
-    }
-
-    case 'search_dob': {
-      query = `
-        SELECT * FROM patients
-        WHERE dob LIKE ?
-        ORDER BY lastname, firstname
-        LIMIT 50
-      `;
-      params = [`%${keyword}%`];
-      break;
-    }
-
-    case 'search_health_number': {
-      query = `
-        SELECT * FROM patients
-        WHERE healthinsurance_number LIKE ?
-        ORDER BY lastname, firstname
-        LIMIT 50
-      `;
-      params = [`%${keyword}%`];
-      break;
-    }
-
-    case 'search_email': {
-      query = `
-        SELECT * FROM patients
-        WHERE email LIKE ?
-        ORDER BY lastname, firstname
-        LIMIT 50
-      `;
-      params = [`%${keyword}%`];
-      break;
-    }
-
-    case 'search_address': {
-      query = `
-        SELECT * FROM patients
-        WHERE address LIKE ?
-        ORDER BY lastname, firstname
-        LIMIT 50
-      `;
-      params = [`%${keyword}%`];
-      break;
-    }
-
-    default:
-      return res.status(400).json({ error: 'Invalid search mode' });
-  }
-
-  connection.query(query, params, (err, results) => {
-    if (err) {
-      console.error('DB error in /patients/search:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    res.json(results);
-  });
-});
-
-
-
-
-  // /**
-  //  * GET /patients/search
-  //  * Supports searching by full name: "Last, First" or just "Last"
-  //  * Supports searching by phone number
-  //  */
-  // app.get('/patients/search', (req, res) => {
-
-  //   /* value to search */
-  //   const keyword = req.query.keyword;
-
-  //   /* search mode, default to search name if no mode given */
-  //   const mode = req.query.mode || 'search_name';
-
-  //   /* If no keyword given return error message */
-  //   if (!keyword) return res.status(400).json({ error: 'Keyword required' });
-
-  //   /* Where the SQL query will be stored */
-  //   let query = '';
-
-  //   /* Holds parameter values that will be safely inserted into the query */
-  //   let params = [];
-
-  //   /* Search by mode type */
-  //   switch (mode) {
-  //     case 'search_name': {
-
-  //         /* Split "Smith, John" into parts */
-  //         const parts = keyword.split(',').map(part => part.trim());
-
-  //         /* Check to see if user entered "Lastname, Firstname" */
-  //         if (parts.length == 2) {
-  //           query = `
-  //             SELECT * FROM patients
-  //             WHERE lastname LIKE ? AND firstname LIKE ?
-  //           `;
-  //           params = [`%${parts[0]}`, `%${parts[1]}`];
-
-
-  //         /* Otherwise check any name field */  
-  //         } else {
-  //           query = `
-  //             SELECT * FROM patients
-  //             WHERE lastname LIKE ? OR firstname LIKE ? OR preferredname
-  //           `;
-  //           params = [`%${keyword}`, `%${keyword}`, `%${keyword}`];
-  //         }
-  //         break;
-  //     }
-
-  //     case 'search_phone': {
-  //       query = `
-  //         SELECT * FROM patients
-  //         WHERE homephone LIKE ? OR cellphone LIKE ? OR workphone LIKE ?
-  //       `;
-
-  //       params = [`%${keyword}`, `%${keyword}`, `%${keyword}`];
-  //       break;
-  //     }
-
-  //     case 'search_dob': {
-  //       query = `
-  //       SELECT * FROM patients
-  //       WHERE dob LIKE ?
-  //       `;
-
-  //       params = [`%${keyword}`];
-  //       break;
-  //     }
-
-  //     case 'search_health_number': {
-  //       query = `
-  //       SELECT * FROM patients
-  //       WHERE healthinsurance_number LIKE ?
-  //       `;
-  //       params = [`%${keyword}`];
-  //       break;
-  //     }
-
-  //     case 'search_email': {
-  //       query = `
-  //       SELECT * FROM patients 
-  //       WHERE email LIKE ?
-  //       `;
-  //       params = [`%${keyword}`];
-  //       break;
-  //     }
-
-  //     case 'search_address': {
-  //       query = `
-  //       SELECT * FROM patients
-  //       WHERE address LIKE ?
-  //       `;
-  //       params = [`%${keyword}`];
-  //       break;
-  //     }
-
-  //     default:
-  //       return res.status(400).json({error: "Invalid search mode"});
-  //   }
-
-  //   connection.query(query, params, (err, results) => {
-  //     if (err) return res.status(400).json({ error: 'Database error'});
-  //     res.json(results);
-  //   });
-  // });
-
-
-
-  /**
-   * GET /doctors
-   * Supports retrieving all the doctors names in the doctors table
+   * GET /patients/search
+   * Flexible patient search.
+   * Modes:
+   *  - search_name: "Last" (prefix) or "Last, First" (exact last + first prefix)
+   *  - search_phone / search_dob / search_health_number / search_email / search_address
+   *
+   * @param {string} req.query.keyword
+   * @param {string} [req.query.mode='search_name']
+   * @returns {200|400|500} JSON Patient[]
    */
-  app.get('/doctors', (req, res) => {
+  app.get('/patients/search', (req, res) => {
+    const keyword = (req.query.keyword || '').trim();
+    const mode = req.query.mode || 'search_name';
 
-    /* SQL query */
-    const query = 'SELECT name FROM doctors';
+    if (!keyword) {
+      return res.status(400).json({ error: 'Keyword required' });
+    }
 
-    connection.query(query, (err, results) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      const doctorNames = results.map((row) => row.name);
-      res.json(doctorNames);
+    let query = '';
+    let params = [];
+
+    switch (mode) {
+      case 'search_name': {
+        /** Split on comma for "Last, First" */
+        const [lastRaw, firstRaw] = keyword.split(',').map(s => (s || '').trim());
+
+        if (firstRaw) {
+          /** "Last, First" -> exact match on last, prefix on first */
+          query = `
+            SELECT * FROM patients
+            WHERE LOWER(lastname) = LOWER(?)
+              AND LOWER(firstname) LIKE LOWER(CONCAT(?, '%'))
+            ORDER BY lastname, firstname
+            LIMIT 50
+          `;
+          params = [lastRaw, firstRaw];
+        } else if (lastRaw) {
+          /** "Last" only -> prefix on last name */
+          query = `
+            SELECT * FROM patients
+            WHERE LOWER(lastname) LIKE LOWER(CONCAT(?, '%'))
+            ORDER BY lastname, firstname
+            LIMIT 50
+          `;
+          params = [lastRaw];
+        } else {
+          return res.status(400).json({ error: 'Invalid name format' });
+        }
+        break;
+      }
+
+      case 'search_phone': {
+        query = `
+          SELECT * FROM patients
+          WHERE homephone LIKE ? OR cellphone LIKE ? OR workphone LIKE ?
+          ORDER BY lastname, firstname
+          LIMIT 50
+        `;
+        params = [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`];
+        break;
+      }
+
+      case 'search_dob': {
+        query = `
+          SELECT * FROM patients
+          WHERE dob LIKE ?
+          ORDER BY lastname, firstname
+          LIMIT 50
+        `;
+        params = [`%${keyword}%`];
+        break;
+      }
+
+      case 'search_health_number': {
+        query = `
+          SELECT * FROM patients
+          WHERE healthinsurance_number LIKE ?
+          ORDER BY lastname, firstname
+          LIMIT 50
+        `;
+        params = [`%${keyword}%`];
+        break;
+      }
+
+      case 'search_email': {
+        query = `
+          SELECT * FROM patients
+          WHERE email LIKE ?
+          ORDER BY lastname, firstname
+          LIMIT 50
+        `;
+        params = [`%${keyword}%`];
+        break;
+      }
+
+      case 'search_address': {
+        query = `
+          SELECT * FROM patients
+          WHERE address LIKE ?
+          ORDER BY lastname, firstname
+          LIMIT 50
+        `;
+        params = [`%${keyword}%`];
+        break;
+      }
+
+      default:
+        return res.status(400).json({ error: 'Invalid search mode' });
+    }
+
+    connection.query(query, params, (err, results) => {
+      if (err) {
+        console.error('DB error in /patients/search:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json(results);
     });
   });
 
+  /**
+   * POST /patients
+   * Create a patient with arbitrary provided fields (keys must match DB columns).
+   *
+   * @returns {201|500} JSON  { message, id }
+   */
   app.post('/patients', (req, res) => {
     const patient = req.body;
     const fields = Object.keys(patient);
@@ -475,57 +401,136 @@ app.get('/patients/search', (req, res) => {
   });
 
 
+  /**
+   * GET /patients/:id
+   * Fetch a single patient with field aliases convenient for the frontend.
+   *
+   * @returns {200|400|404|500} JSON Patient
+   */
+  app.get('/patients/:id', (req, res) => {
+    const id = req.params.id;
+    if (!id) return res.status(400).json({ error: 'Patient ID required' });
 
-  // /**
-  //  * POST /patients
-  //  * Inserts a new patient record into the patients table
-  //  */ 
-  // app.post('/patients', (req, res) => {
+    const query = `SELECT
+      id, lastname, firstname, preferredname, address, city, province,
+      postalcode, homephone, workphone, cellphone, email, dob, sex,
+      healthinsurance_number AS healthNumber,
+      healthinsurance_version_code AS healthVersion,
+      patient_status AS status, family_physician AS familyPhysician
+      FROM patients
+      WHERE id = ?`;
+    connection.query(query, [id], (err, results) => {
+      if (err) {
+        console.error('Failed to fetch patient:', err.message);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (!results[0]) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+      res.json(results[0]);
+    });
+  });
 
-  //   /* Patient info to be stored */
-  //   const patient = req.body;
+  /**
+   * PUT /patients/:id
+   * Partial update: only fields included in the body are updated.
+   *
+   * @returns {200|400|404|500} JSON
+   */
+  app.put('/patients/:id', (req, res) => {
+    const patientId = req.params.id;
+    const allowedFields = [
+      'lastname', 'firstname', 'preferredname',
+      'address', 'city', 'province', 'postalcode',
+      'homephone', 'workphone', 'cellphone', 'email',
+      'dob', 'sex', 'healthinsurance_number',
+      'healthinsurance_version_code',
+      'patient_status', 'family_physician'
+    ];
 
-  //   /* An array of all the field names from the patient object */
-  //   const fields = Object.keys(patient);
+    /* Build dynamic SET clauses based on which fields are present in req.body */
+    const fields = [];
+    const values = [];
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        fields.push(`${field} = ?`);
+        values.push(req.body[field]);
+      }
+    }
 
-  //   /* An array of all the corresponding values from the patient object */
-  //   const values = Object.values(patient);
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
 
-  //   /* Placeholders for the parameterized SQL Query */
-  //   const placeholders = fields.map(() => '?').join(', ');
+    const sql = `
+      UPDATE patients
+      SET ${fields.join(', ')}
+      WHERE id = ?
+    `;
+    values.push(patientId);
 
-  //   /* SQL Query to insert the patient values into the patients table */
-  //   const query = `INSERT INTO patients (${fields.join(', ')}) VALUES (${placeholders})`;
+    connection.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('Error updating patient:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+      res.json({ message: 'Patient updated successfully' });
+    });
+  });
+  
+  // ────────────────────────────────────────────────────────────────────────────
+  // Doctors
+  // ────────────────────────────────────────────────────────────────────────────
+  
 
-  //   connection.query(query, (err, results) => {
-  //     if (err) {
-  //       console.error('Failed to insert patient:', err.message);
-  //       return res.status(500).json({ error: 'Failed to insert patient:' });
-  //     }
-  //     res.status(201).json({ message: 'Patient added successfully', id: result.insertId});
-  //   });
-  // });
+  /**
+   * GET /doctors
+   * Return a list of doctor names.
+   *
+   * @returns {200|500} JSON string[]
+   */
+  app.get('/doctors', (req, res) => {
+
+    /* SQL query */
+    const query = 'SELECT name FROM doctors';
+
+    connection.query(query, (err, results) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      const doctorNames = results.map((row) => row.name);
+      res.json(doctorNames);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Appointments
+  // ────────────────────────────────────────────────────────────────────────────
 
   /**
    * POST /appointments
-   * Inserts booked appointment details form the frontend into the appointments table
+   * Create an appointment after checking overlap for provider/date/time.
+   * Inserts booked appointment details from the frontend into the appointments table
+   *
+   * @param {number|string} req.body.patientId
+   * @param {number|string} req.body.providerId
+   * @param {string} req.body.date - YYYY-MM-DD
+   * @param {string} req.body.time - HH:MM[:SS]
+   * @param {number|string} req.body.duration - minutes
+   * @param {string} [req.body.reason]
+   * @param {'booked'|'present'|'being_seen'|'finished'|'missed'} [req.body.status]
+   * @returns {201|409|500} JSON
    */
   app.post('/appointments', async (req, res) => {
     const { patientId, providerId, date, time, duration, reason, status } = req.body;
 
-    // // compute end time
-    // const [h, m, s] = time.split(':').map(Number);
-    // const startSec = h * 3600 + m * 60 + s;
-    // const endSec = startSec + duration * 60;
-
+    /* Normalize start/end in s for overlap math */
     const [h, m, s = 0] = time.split(':').map(Number);
     const startSec = h*3600 + m*60 + s;
     const endSec   = startSec + Number(duration)*60;
 
-
-
-
-    // 1) check for overlap
+    /* 1) overlap check */
     const overlapQuery = `
       SELECT COUNT(*) AS cnt
         FROM appointments
@@ -548,7 +553,7 @@ app.get('/patients/search', (req, res) => {
       return res.status(409).json({ error: 'Time slot already booked' });
     }
 
-    // 2) otherwise insert
+    /* 2) otherwise insert */
     const insertQ = `
       INSERT INTO appointments
         (patient_id, provider_id, appointment_date, start_time, duration_minutes, reason, status)
@@ -569,108 +574,68 @@ app.get('/patients/search', (req, res) => {
     res.status(201).json({ message: 'Appointment added successfully' });
   });
 
-  // app.post('/appointments', (req, res) => {
-  //   const { patientId, providerId, date, time, duration, reason, status } = req.body;
-
-  //   /* SQL Query to insert the appointment info into the appointments table */
-  //   const query = `INSERT INTO appointments
-  //     (patient_id, provider_id, appointment_date, start_time, duration_minutes, reason, status)
-  //     VALUES (?, ?, ?, ?, ?, ?, ?)`;  
-
-  //   values = [patientId, providerId, date, time, duration, reason, status || 'booked'];
-
-  //   connection.query(query, values, (err, results) => {
-  //     if (err) {
-  //       console.error('Failed to insert appointment info:', err.message);
-  //       return res.status(500).json({ error: 'Failed to insert appointment'});
-  //     }
-  //     res.status(201).json({ message: 'Appointment added successfully'});
-  //   });
-
-  // });
 
   /**
    * GET /appointments
-   * Returns all appointments for a given date
-   */
-  // In server.js
+   * Return all appointments for a given date (optionally filtered by providerId).
+   *
+   * @param {string} req.query.date - YYYY-MM-DD (required)
+   * @param {string|number} [req.query.providerId]
+   * @returns {200|400|500} JSON Appointment[]
+   */  
+  app.get('/appointments', (req, res) => {
+    const { date, providerId } = req.query;
 
-app.get('/appointments', (req, res) => {
-  const { date, providerId } = req.query;
-
-  if (!date) {
-    return res.status(400).json({ error: 'Date is required' });
-  }
-
-  // Start with the base query filtering by date
-  let sql = `
-    SELECT
-      a.id,
-      a.start_time,
-      a.duration_minutes,
-      a.reason,
-      a.status,
-      a.patient_id,
-      p.firstname,
-      p.lastname,
-      d.name AS provider_name
-    FROM appointments a
-    JOIN patients p ON a.patient_id = p.id
-    JOIN doctors  d ON a.provider_id  = d.id
-    WHERE a.appointment_date = ?
-  `;
-  const params = [date];
-
-  // If providerId is passed, narrow by provider
-  if (providerId) {
-    sql += ` AND a.provider_id = ?`;
-    params.push(providerId);
-  }
-
-  // Optional: keep your ordering
-  sql += ` ORDER BY a.start_time`;
-
-  connection.query(sql, params, (err, results) => {
-    if (err) {
-      console.error('Failed to fetch appointments:', err.message);
-      return res.status(500).json({ error: 'Database error' });
+    if (!date) {
+      return res.status(400).json({ error: 'Date is required' });
     }
-    res.json(results);
+
+    /* Start with the base query filtering by date */
+    let sql = `
+      SELECT
+        a.id,
+        a.start_time,
+        a.duration_minutes,
+        a.reason,
+        a.status,
+        a.patient_id,
+        p.firstname,
+        p.lastname,
+        d.name AS provider_name
+      FROM appointments a
+      JOIN patients p ON a.patient_id = p.id
+      JOIN doctors  d ON a.provider_id  = d.id
+      WHERE a.appointment_date = ?
+    `;
+    const params = [date];
+
+    /* If providerId is passed, narrow by provider */
+    if (providerId) {
+      sql += ` AND a.provider_id = ?`;
+      params.push(providerId);
+    }
+
+    /* Optional: keep your ordering */
+    sql += ` ORDER BY a.start_time`;
+
+    connection.query(sql, params, (err, results) => {
+      if (err) {
+        console.error('Failed to fetch appointments:', err.message);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json(results);
+    });
   });
-});
 
-  // app.get('/appointments', (req, res) => {
-  //   const { date } = req.query;
-
-  //   if (!date) return res.status(400).json({ error: 'Date is required' });
-
-  //   const query = `
-  //     SELECT
-  //       a.id, a.start_time, a.duration_minutes, a.reason, a.status, a.patient_id,
-  //       p.firstname, p.lastname,
-  //       d.name as provider_name
-  //     FROM appointments a
-  //     JOIN patients p ON a.patient_id = p.id
-  //     JOIN doctors d ON a.provider_id = d.id
-  //     WHERE appointment_date = ?
-  //     `;
-    
-  //   connection.query(query, [date], (err, results) => {
-  //     if (err) {
-  //       console.error('Failed to fetch appointments:', err.message);
-  //       return res.status(500).json({ error: 'Database error' });
-  //     }
-  //     res.json(results);
-  //   });
-      
-  // });
 
   /**
    * PUT /appointments/:id/status
-   * Updates the status of an appointment
+   * Update only the status field of an appointment.
+   *
+   * @param {'booked'|'present'|'being_seen'|'finished'|'missed'} req.body.status
+   * @returns {200|400|500} JSON
    */
   app.put('/appointments/:id/status', (req, res) => {
-    
     const id = req.body.id;
     const status = req.body.status;
 
@@ -692,9 +657,12 @@ app.get('/appointments', (req, res) => {
     })
   });
 
+
   /**
    * DELETE /appointments/:id
-   * Deletes an appt with the given appt id
+   * Remove an appointment by appointment ID.
+   *
+   * @returns {200|400|404|500} JSON
    */
   app.delete('/appointments/:id', (req, res) => {
     const apptId = req.params.id;
@@ -720,7 +688,9 @@ app.get('/appointments', (req, res) => {
 
   /**
    * PUT /appointments/:id
-   * Updates an existing appointment (reason, duration, time, etc.)
+   * Partial update of an appointment (reason, duration, time, etc.).
+   *
+   * @returns {200|400|404|500} JSON
    */
   app.put('/appointments/:id', (req, res) => {
     const apptId = req.params.id;
@@ -788,82 +758,13 @@ app.get('/appointments', (req, res) => {
     });
   });
 
-    /**
-   * GET /patients/:id
-   * Returns all demographic fields for the given patient ID
-   */
-  app.get('/patients/:id', (req, res) => {
-    const id = req.params.id;
-    if (!id) return res.status(400).json({ error: 'Patient ID required' });
-
-    const query = `SELECT
-      id, lastname, firstname, preferredname, address, city, province,
-      postalcode, homephone, workphone, cellphone, email, dob, sex,
-      healthinsurance_number AS healthNumber,
-      healthinsurance_version_code AS healthVersion,
-      patient_status AS status, family_physician AS familyPhysician
-      FROM patients
-      WHERE id = ?`;
-    connection.query(query, [id], (err, results) => {
-      if (err) {
-        console.error('Failed to fetch patient:', err.message);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!results[0]) {
-        return res.status(404).json({ error: 'Patient not found' });
-      }
-      res.json(results[0]);
-    });
-  });
 
   /**
-   * PUT /patients/:id
+   * GET /appointments/:id
+   * Fetch a single appointment with joined patient/provider names.
+   *
+   * @returns {200|404|500} JSON
    */
-  app.put('/patients/:id', (req, res) => {
-    const patientId = req.params.id;
-    const allowedFields = [
-      'lastname', 'firstname', 'preferredname',
-      'address', 'city', 'province', 'postalcode',
-      'homephone', 'workphone', 'cellphone', 'email',
-      'dob', 'sex', 'healthinsurance_number',
-      'healthinsurance_version_code',
-      'patient_status', 'family_physician'
-    ];
-
-    /* Build dynamic SET clauses based on which fields are present in req.body */
-    const fields = [];
-    const values = [];
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        fields.push(`${field} = ?`);
-        values.push(req.body[field]);
-      }
-    }
-
-    if (fields.length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const sql = `
-      UPDATE patients
-      SET ${fields.join(', ')}
-      WHERE id = ?
-    `;
-    values.push(patientId);
-
-    connection.query(sql, values, (err, result) => {
-      if (err) {
-        console.error('Error updating patient:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'Patient not found' });
-      }
-      res.json({ message: 'Patient updated successfully' });
-    });
-  });
-
-  // after your other routes
   app.get('/appointments/:id', (req, res) => {
     const id = req.params.id;
     connection.query(
@@ -876,11 +777,15 @@ app.get('/appointments', (req, res) => {
       (err, results) => {
         if (err) return res.status(500).json({ error: 'DB error' });
         if (results.length === 0) return res.status(404).json({ error: 'Not found' });
-        // results[0] is a single appointment object
         res.json(results[0]);
       }
     );
   });
+
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Start server
+  // ────────────────────────────────────────────────────────────────────────────
 
 
   app.listen(PORT, HOST, () => {
@@ -888,6 +793,7 @@ app.get('/appointments', (req, res) => {
   });
 }
 
+/** Boot the service */
 connectWithRetry();
 
 
