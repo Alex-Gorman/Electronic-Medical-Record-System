@@ -1,25 +1,90 @@
-// src/CreateDemographic/CreateDemographic.js
+/**
+ * @file CreateDemographic.js
+ * @module CreateDemographic
+ * @description
+ * Form to create a new patient demographic record. Loads provider list,
+ * validates inputs via HTML constraints, and submits to the backend.
+ *
+ * ## Backend endpoints used (base http://localhost:3002)
+ * - GET  /doctors          → load list of doctor names
+ * - POST /patients         → create a new patient with submitted form data
+ */
+
+
 import React, { useState, useEffect } from 'react';
 import './CreateDemographic.css';
 
+
+/**
+ * Shape of the payload sent to the backend `/patients` endpoint.
+ * (Keys match your DB column names.)
+ * @typedef {Object} PatientCreatePayload
+ * @property {string} firstname
+ * @property {string} lastname
+ * @property {string} [preferredname]
+ * @property {string} [address]
+ * @property {string} [city]
+ * @property {string} province
+ * @property {string} [postalcode]                       // "A1A 1A1"
+ * @property {string} [homephone]                        // 10 digits
+ * @property {string} [workphone]                        // 10 digits
+ * @property {string} [cellphone]                        // 10 digits
+ * @property {string} email
+ * @property {string} dob                                // "YYYY-MM-DD"
+ * @property {"M"|"F"|"Other"|""} sex
+ * @property {string} [healthinsurance_number]           // 10 digits
+ * @property {string} [healthinsurance_version_code]     // 2 caps
+ * @property {"active"|"not enrolled"} patient_status
+ * @property {string} family_physician                   // doctor name
+ */
+
+
+/**
+ * Immutable list of Canadian provinces shown in the Province select.
+ * @constant
+ * @type {string[]}
+ */
+const PROVINCES = [
+  'Ontario', 'Quebec', 'Nova Scotia', 'New Brunswick',
+  'Manitoba', 'British Columbia', 'Prince Edward Island',
+  'Saskatchewan', 'Alberta', 'Newfoundland and Labrador',
+];
+
+
+/**
+ * CreateDemographic component
+ *
+ * Renders a two-column form that collects basic demographic information
+ * and posts it to the backend to create a patient record.
+ *
+ * @returns {JSX.Element}
+ *
+ * @example
+ * // In a router:
+ * <Route path="/create-demographic" element={<CreateDemographic />} />
+ */
 function CreateDemographic() {
-  // State to store form data as key-value pairs
+  /**
+   * Current form values keyed by backend field names.
+   * @type {[Partial<PatientCreatePayload>, Function]}
+   */
   const [formData, setFormData] = useState({});
 
-  // State to store list of doctors retrieved from backend
+  /**
+   * List of available doctor names (string[]) for the Family Physician dropdown.
+   * @type {[string[], Function]}
+   */
   const [doctors, setDoctors] = useState([]);
 
-  /* State to see if the patient was created sucessfully */
+  /**
+   * Success message shown after a successful POST.
+   * @type {[string, Function]}
+   */
   const [successMessage, setSuccessMessage] = useState('');
 
-  // List of Canadian provinces used in dropdown
-  const provinces = [
-    'Ontario', 'Quebec', 'Nova Scotia', 'New Brunswick',
-    'Manitoba', 'British Columbia', 'Prince Edward Island',
-    'Saskatchewan', 'Alberta', 'Newfoundland and Labrador'
-  ];
-
-  // useEffect to fetch doctors when component mounts
+  /**
+   * Load the list of doctors once on mount.
+   */
   useEffect(() => {
     fetch('http://localhost:3002/doctors')
       .then((res) => res.json())           // Parse the JSON response
@@ -27,44 +92,57 @@ function CreateDemographic() {
       .catch((err) => console.error('Failed to fetch doctors:', err)); // Handle any error
   }, []);
 
-  // Handles input changes and updates state accordingly
+
+  /* ===== Handlers ===== */
+
+
+  /**
+   * Generic controlled-input handler. Updates a single field in {@link formData}.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLSelectElement>} e
+   * @returns {void}
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  // Handles form submission
-  const handleSubmit = (e) => {
+
+  /**
+   * Submit handler. Sends the current {@link formData} to POST /patients.
+   * Displays a success message or alerts on failure.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e
+   * @returns {Promise<void>}
+   */
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    fetch('http://localhost:3002/patients', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to save patient');
-        return res.json();
-      })
-      .then((data) => {
-        setSuccessMessage('✅ Patient Created Successfully'); // ← Show message
-        console.log(data);
-        // You can keep formData if you want to let users see what they submitted
-        // or optionally disable the form after submission
-      })
-      // .then((data) => {
-      //   alert('Patient created successfully!');
-      //   console.log(data);
-      //   // Optionally reset form
-      //   setFormData({});
-      // })
-      .catch((err) => {
-        console.error(err);
-        alert('An error occurred while saving the patient.');
+    try {
+      const res = await fetch('http://localhost:3002/patients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
+
+      const text = await res.text(); // read body no matter what
+      if (!res.ok) {
+        console.error('POST /patients failed:', res.status, text);
+        alert(`Save failed (${res.status}): ${text || res.statusText}`);
+        return;
+      }
+
+      const data = text ? JSON.parse(text) : null;
+      setSuccessMessage('✅ Patient Created Successfully');
+      console.log('Created patient:', data);
+    } catch (err) {
+      console.error('Network/parse error:', err);
+      alert('An unexpected error occurred while saving the patient.');
+    }
   };
+
+
+  /* === Render === */
 
 
   return (
@@ -117,7 +195,7 @@ function CreateDemographic() {
             <label>Province:</label>
             <select name="province" required onChange={handleChange}>
               <option value="">Select Province</option>
-              {provinces.map((prov) => (
+              {PROVINCES.map((prov) => (
                 <option key={prov} value={prov}>{prov}</option>
               ))}
             </select>
