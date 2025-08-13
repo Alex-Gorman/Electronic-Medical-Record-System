@@ -50,30 +50,47 @@ http://localhost:3000
 ### Main menu
 ![Main menu](docs/images/main-menu.png)
 
+---
+
 ### Login page
 ![Login page](docs/images/login-page.png)
+
+---
 
 ### Add appointment page
 ![Add appointment page](docs/images/add-appointment-page.png)
 
+---
+
 ### Edit appointment page
 ![Edit appointment page](docs/images/edit-appointment-page.png)
+
+---
 
 ### Calendar popup
 ![Calendar popup](docs/images/calendar-popup.png)
 
+---
+
 ### Add demographic record page
 ![Add demographic record page](docs/images/add-demographic-record-page.png)
+
+---
 
 ### Patient search page
 ![Patient search page](docs/images/patient-search-page.png)
 
+---
+
 ### Master record page
 ![Master record page](docs/images/master-record.png)
+
+---
 
 ### Master record edit page
 ![Master record edit page](docs/images/master-record-edit-page.png)
 
+---
 
 
 ## Documentation
