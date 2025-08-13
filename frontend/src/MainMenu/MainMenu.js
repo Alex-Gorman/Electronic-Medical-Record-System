@@ -1,9 +1,20 @@
-// import React, { useEffect, useState } from 'react';
-// import './MainMenu.css';
-// import AppointmentFormPopup from '../Components/AppointmentFormPopup';
-// import DatePicker from 'react-datepicker';
-// import 'react-datepicker/dist/react-datepicker.css';
-// import { useNavigate, useLocation } from 'react-router-dom';
+/**
+ * @file MainMenu.js
+ * @module MainMenu
+ *
+ * Day view for two providers (e.g., Dr. Wong / Dr. Smith) showing 5-minute slots
+ * from 07:00 to 23:55. Supports:
+ * - Clicking a time slot to open the Add Appointment popup.
+ * - Editing an appointment by clicking the patient name.
+ * - Cycling appointment status by clicking the folder icon.
+ * - Opening related windows (E-Chart, Billing, Master Record, Rx).
+ * - Live updates in response to messages from the popup windows.
+ *
+ * Backend endpoints used (base: http://localhost:3002)
+ * - GET  /doctors
+ * - GET  /appointments?date=YYYY-MM-DD
+ * - PUT  /appointments/:id/status
+ */
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -13,21 +24,69 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 /**
+ * Shape returned from the backend for an appointment.
+ * @typedef {Object} Appointment
+ * @property {number|string} id
+ * @property {string} start_time          - "HH:MM:SS"
+ * @property {number} duration_minutes
+ * @property {"booked"|"present"|"being_seen"|"finished"|"missed"} status
+ * @property {number|string} patient_id
+ * @property {string} firstname
+ * @property {string} lastname
+ * @property {string} provider_name       - e.g. "Dr. Wong"
+ * @property {string} [reason]
+ */
+
+
+/* ===== Helpers ===== */
+
+
+/**
+ * Cycle to the next appointment status (booked → present → being_seen → finished → missed → booked).
+ * @param {"booked"|"present"|"being_seen"|"finished"|"missed"} current
+ * @returns {"booked"|"present"|"being_seen"|"finished"|"missed"}
+ */
+const getNextStatus = (currentStatus) => {
+  const statuses = ['booked', 'present', 'being_seen', 'finished', 'missed'];
+  const currentStatusIndex = statuses.indexOf(currentStatus);
+
+  if (currentStatusIndex === 4) return statuses[0];
+  else return statuses[currentStatusIndex+1];
+}
+
+
+/**
+ * Convert total minutes since midnight to "HH:MM".
+ * @param {number} totalMins
+ * @returns {string}
+ */
+const toKey = (totalMins) => {
+  const hh = String(Math.floor(totalMins / 60)).padStart(2, '0');
+  const mm = String(totalMins % 60).padStart(2, '0');
+  return `${hh}:${mm}`;
+};
+
+
+
+/**
  * MainMenu component for rendering the primary layout and UI elements.
- * Includes EMR subbars, schedule time slots, and a form for posting data.
+ * @returns {JSX.Element}
  */
 function MainMenu() {
-  /* Store the current date, HARDCODE FOR NOW */
-  // const currentDate = '2025-06-27'; /* REPLACE WITH DYANMIC DATE LATER */
-
+  /* ===== Query params ===== */
   const { search } = useLocation();
   const navigate   = useNavigate();
   const params     = new URLSearchParams(search);
 
-  // **1. Read the raw “YYYY-MM-DD” string from the URL**
+  /* 1. Read YYYY-MM-DD from the URL if present (and parse as *local* date to avoid UTC shifts) */
   const dateParam = params.get('date');
 
-  // **2. Parse it as a local date** (so you don’t get a UTC shift)
+
+  /* ===== Component state ===== */
+
+  
+  /* 2. Parse it as a local date** (so you don’t get a UTC shift) */
+  /** @type {[Date, Function]} */
   const [currentDate, setCurrentDate] = useState(() => {
     if (dateParam) {
       const [y, m, d] = dateParam.split('-').map(Number);
@@ -37,42 +96,38 @@ function MainMenu() {
     }
   });
 
-  // whenever date changes, update URL and refetch
+
+  /** @type {[Appointment[], Function]} */
+  const [appointments, setAppointments] = useState([]);
+
+  /** Inline calendar visibility (not the popup window) */
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  /** Provider names from the backend (index 0 → left column, index 1 → right column) */
+  const [doctors, setDoctors] = useState([]);
+
+  /**
+   * Compute YYYY-MM-DD for the currently viewed date.
+   * @returns {string}
+   */
+  const currentIsoDate = () => currentDate.toLocaleDateString('en-CA').slice(0, 10);
+
+  /* ===== Effects ===== */
+  
+  /**
+   * Push the date to the URL and refresh appointments whenever `currentDate` changes.
+   */
   useEffect(() => {
-    // const iso = currentDate.toISOString().slice(0,10);
-    const iso = currentDate.toLocaleDateString('en-CA').slice(0,10); 
-    // push into URL (replace so it doesn’t add history entries)
+    const iso = currentIsoDate();
     navigate(`?date=${iso}`, { replace: true });
     setShowCalendar(false);
     fetchAppointments();
   }, [currentDate, navigate]);
 
-  // // 1) read from query
-  //   const params = new URLSearchParams(window.location.search)
-  //   const [currentDate, setCurrentDate] = useState(() => {
-  //     const d = params.get('date')
-  //     return d ? new Date(d) : new Date()
-  //   })
 
-  //   // 2) whenever you set it, also push into URL
-  //   useEffect(() => {
-  //     const iso = currentDate.toISOString().slice(0,10)
-  //     history.replace({ search: `?date=${iso}` })
-  //     // …then fetchAppointments()…
-  //   }, [currentDate, navigate]);
-
-
-  // const [currentDate, setCurrentDate] = useState(() => new Date());
-
-  /* Store the list of appointments retrieved from the backend server to display to the timesheet */
-  const [appointments, setAppointments] = useState([]);
-
-  /* Calendar */
-  const [showCalendar, setShowCalendar] = useState(false);
-
-  const [doctors, setDoctors] = useState([]);
-
-  // then add a useEffect to grab them once:
+  /**
+   * Fetch provider names once.
+   */
   useEffect(() => {
     async function loadDoctors() {
       try {
@@ -86,41 +141,25 @@ function MainMenu() {
     loadDoctors();
   }, []);
 
-  // useEffect(() => {
-  //   const handler = event => {
-  //     const msg = event.data;
-  //     if (msg?.type === 'date-selected' && msg.timestamp) {
-  //       setCurrentDate(new Date(msg.timestamp));
-  //     }
-  //     if (msg?.type === 'appointment-added') {
-  //       // 1) switch the calendar to the date you just booked on
-  //       // setCurrentDate(new Date(msg.date));
-  //       setCurrentDate(new Date(msg.date + 'T00:00'));
-  //       // 2) then fetch that day’s appointments
-  //       fetchAppointments();
-  //     }
-  //     if (msg?.type === 'appointment-deleted') {
-  //       fetchAppointments();
-  //     }
-  //   };
 
-  //   window.addEventListener('message', handler);
-  //   return () => window.removeEventListener('message', handler);
-  // }, []);
-
+  /**
+   * Handle messages from child popups to keep the day view in sync.
+   * - { type: 'appointment-deleted', apptId, date }
+   * - { type: 'appointment-added',  date }
+   */
   useEffect(() => {
     const handler = (event) => {
       const msg = event.data;
       if (msg?.type === 'appointment-deleted') {
         const deletedId = String(msg.apptId);
-        const viewDateIso = currentDate.toLocaleDateString('en-CA').slice(0,10);
+        const viewDateIso = currentIsoDate();
 
-        // only update if the message is for the date we’re viewing
+        /* live update if the message applies to the viewed date (or msg has no date) */
         if (!msg.date || msg.date === viewDateIso) {
           setAppointments(prev => prev.filter(a => String(a.id) !== deletedId));
         }
 
-        // optional safety net: do a refetch in background
+        /* safety net: background refresh */
         fetchAppointments();
       }
 
@@ -133,38 +172,12 @@ function MainMenu() {
   }, [currentDate]);
 
 
-
-  // /* Take a message from the add appointment window to refresh the timesheet and grab all new appointments */
-  // useEffect(() => {
-  //   const handleMessage = (event) => {
-  //     if (event.data === 'appointment-added' || event.data === 'appointment-deleted') {
-  //       fetchAppointments();
-  //     }
-  //   };
-  //   window.addEventListener('message', handleMessage);
-  //   return () => {
-  //     window.removeEventListener('message', handleMessage);
-  //   };
-  // }, []);
-
-  // useEffect(() => {
-  //   const handler = event => {
-  //     if (event.data?.type === 'date-selected' && event.data.timestamp) {
-  //       setCurrentDate(new Date(event.data.timestamp));
-  //     }
-  //     if (event.data === 'appointment-added' || event.data === 'appointment-deleted') {
-  //         fetchAppointments();
-  //       }
-  //   };
-  //   window.addEventListener('message', handler);
-  //   return () => window.removeEventListener('message', handler);
-  // }, []);
-
-
-  /* Fetch the list of appointments whenever the date changes */
+  /**
+   * Fetch appointments for the current date.
+   * @returns {Promise<void>}
+   */
   const fetchAppointments = async () => {
-    // const isoDate = currentDate.toISOString().slice(0,10); /* “2025-08-06” */
-    const isoDate = currentDate.toLocaleDateString('en-CA').slice(0,10); 
+    const isoDate = currentIsoDate();
     try {
       const response = await fetch(`http://localhost:3002/appointments?date=${isoDate}`);
       const data = await response.json();
@@ -179,34 +192,11 @@ function MainMenu() {
     setShowCalendar(false);
   }, [currentDate]);
 
-  // useEffect(() => {
-  //   const handler = event => {
-  //     if (event.data?.type === 'date-selected' && event.data.timestamp) {
-  //       setCurrentDate(new Date(event.data.timestamp));
-  //     }
-  //     if (event.data === 'appointment-added' || event.data === 'appointment-deleted') {
-  //         fetchAppointments();
-  //       }
-  //   };
-  //   window.addEventListener('message', handler);
-  //   return () => window.removeEventListener('message', handler);
-  // }, []);
+
+  /* ===== Handlers ===== */
 
 
-  // useEffect(() => {
-  //   const handler = event => {
-  //     if (event.data?.type === 'date-selected') {
-  //       setCurrentDate(new Date(event.data.date));
-  //     }
-  //     if (event.data === 'appointment-added' || event.data === 'appointment-deleted') {
-  //       fetchAppointments();
-  //     }
-  //   };
-  //   window.addEventListener('message', handler);
-  //   return () => window.removeEventListener('message', handler);
-  // }, []);
-
-
+  /* Go to previous day on timesheet */
   const handlePrevDay = () => {
     setCurrentDate(d => {
       const prev = new Date(d);
@@ -215,6 +205,8 @@ function MainMenu() {
     });
   };
 
+
+  /* Go to next day on timesheet */
   const handleNextDay = () => {
     setCurrentDate(d => {
       const next = new Date(d);
@@ -223,56 +215,41 @@ function MainMenu() {
     });
   };
 
-  const handleToday = () => {
-    setCurrentDate(() => new Date()); 
-  };
 
+  /* Go to current date on timesheet */
+  const handleToday = () => setCurrentDate(new Date()); 
+
+
+  /* Toggle inline calendar (not the popup calendar window) */
   const handleCalendarToggle = () => {
     setShowCalendar(open => !open);
   };
 
+
+  /* Open standalone calendar popup window */
   const handleCalendarOpen = () => {
-    // opens a *new* browser window/tab at /calendar-popup
-    window.open(
-      '/calendar-popup',
-      'Calendar',
-      'width=320,height=360,resizable,scrollbars'
-    );
+    window.open('/calendar-popup', 'Calendar', 'width=320,height=360,resizable,scrollbars');
   };
 
 
-
-
   /**
-   * Handle the user click of the time slot
+   * Open the Add Appointment popup prefilled with the clicked time & provider.
+   * @param {string} time      - "HH:MM"
+   * @param {1|2} providerId   - column index for the provider
    */
   const handleTimeClick = (time, providerId) => {
-
-    /* Current date, “2025-08-06” */
-    // const isoDate = currentDate.toISOString().slice(0,10);
-    const isoDate = currentDate.toLocaleDateString('en-CA').slice(0,10); 
-
-    /* Query string with the info to be passed to the popup window */
+    const isoDate = currentIsoDate();
     const popupURL = `/appointment-form-popup?time=${encodeURIComponent(time)}&providerId=${providerId}&mode=add&date=${isoDate}`;
-
-    /* Open the popup appointment form window */
     window.open(popupURL, 'ADD APPOINTMENT', 'width=600,height=550');
   };
 
-  /**
-   * Get the next status, after clicking the folder icon
-   */
-  const getNextStatus = (currentStatus) => {
-    const statuses = ['booked', 'present', 'being_seen', 'finished', 'missed'];
-    const currentStatusIndex = statuses.indexOf(currentStatus);
 
-    if (currentStatusIndex === 4) return statuses[0];
-    else return statuses[currentStatusIndex+1];
-  }
-
-  /**
-   * Handle the folder icon being clicked, which means a change of patient appointment status
-   * Send the updated status to the backend server with the appointment id and status
+   /**
+   * Update appointment status (cycles through the allowed states).
+   * Status updated upon folder icon being clicked
+   * @param {number|string} apptId
+   * @param {"booked"|"present"|"being_seen"|"finished"|"missed"} currentStatus
+   * @returns {Promise<void>}
    */
   const handleStatusClick = async (apptId, currentStatus) => {
     const nextStatus = getNextStatus(currentStatus);
@@ -303,117 +280,88 @@ function MainMenu() {
     }
   };
 
+
   /**
-   * Handle e-chart click
+   * Open E-Chart popup for a given row (patient name).
+   * @param {Appointment} appt
    */
   const handleEchartClick = async(appt) => {
     const patientId = appt.patient_id;
-
-    /* Query string with the info to be passed to the popup window */
     const popupURL = `/casemgmt?patientId=${encodeURIComponent(patientId)}`
-
-    /* Open the popup e-chart record for the given patient */
-    /* ENCOUNTER - LASTNAME, FIRSTNAME SEX AGE years */
     window.open(popupURL, 'ENCOUNTER - LASTNAME, FIRSTNAME SEX AGE years', 'width=600,height=550');
   }
 
+
   /**
-   * Handle billing click
+   * Open Billing popup for a given row (patient name).
+   * @param {Appointment} appt
    */
   const handleBillingClick = async(appt) => {
     const patientId = appt.patient_id;
-
-    /* Query string with the info to be passed to the popup window */
     const popupURL = `/billing?patientId=${encodeURIComponent(patientId)}`
-
-    /* Open the popup e-chart record for the given patient */
     window.open(popupURL, 'Ontario Billing', 'width=600,height=550');
   }
 
 
-
   /**
-   * Handle master record click
+   * Open Master Record popup for a given row (patient name).
+   * @param {Appointment} appt
    */
   const handleMasterRecordClick = async(appt) => {
     const patientId = appt.patient_id;
-
-    /* Query string with the info to be passed to the popup window */
     const popupURL = `/demographic?patientId=${encodeURIComponent(patientId)}`;
-
-    /* Open the popup master record demographic for the given patient */
-    // window.open(popupURL, 'PATIENT DETAIL INFO', 'width=950,height=22250');
     window.open(popupURL, '_blank', 'width=950,height=800,resizable=yes,scrollbars=yes');
   }
 
+
   /**
-   * Handle Rx button click
+   * Open Rx popup for a given row (patient name).
+   * @param {Appointment} appt
    */
   const handleRxClick = async(appt) => {
     const patientId = appt.patient_id;
-
-    /* Query string with the info to be passed to the popup window */
     const popupURL = `/Rx?patientId=${encodeURIComponent(patientId)}`;
-
-    /* Open the popup master record demographic for the given patient */
     window.open(popupURL, 'PATIENT DRUG PROFILE', 'width=600,height=550');
   }
 
 
-
   /**
-   * Handle editing an appointment after clicking on a patients name on the timesheet
+   * Open Edit Appointment popup for a given row (patient name).
+   * @param {string} time
+   * @param {1|2} providerId
+   * @param {Appointment} appt
    */
   const handleEditAppointment = async (time, providerId, appt) => {
-
-    /* Current date, “2025-08-06” */
-    // const isoDate = currentDate.toISOString().slice(0,10);
-    const isoDate = currentDate.toLocaleDateString('en-CA').slice(0,10); 
-
-    /* Query string with the info to be passed to the popup window */
-    // const popupURL = `/appointment-form-popup?time=${encodeURIComponent(time)}&providerId=${providerId}&mode=edit&apptId=${appt.id}`;
-
-    /* Query string with the info to be passed to the popup window */
+    const isoDate = currentIsoDate();
     const popupURL = `/appointment-form-popup?time=${encodeURIComponent(time)}&providerId=${providerId}&mode=edit&apptId=${appt.id}&date=${isoDate}`;
-
-    /* Open the popup appointment form window */
     window.open(popupURL, 'EDIT APPOINTMENT', 'width=600,height=550');
   }
 
+
+
   /**
-   * Generate the 5 minute time slots from 7:00 AM to 23:55 PM for the schedule on given day on the UI
-   * Also generate the appointment if they exist with the correct pt info
+   * Render the day’s rows (07:00 → 23:55 in 5-minute increments) with rowSpan
+   * cells for appointments. Uses consistent math for both providers
+   * to avoid column shifts when spanning hour boundaries.
+   *
+   * @returns {JSX.Element[]} array of <tr> elements
    */
   const generateTimeRows = () => {
-
     /* Holds all the <tr> rows for the schedule table */
+    /** @type {JSX.Element[]} */
     const rows = [];
 
-    /* Tracks which times are covered by a rowSpan cell for each provider, when a cell spans multiple rows, the following time slots are hidden (no separate <tr> rendered) */
-    const hiddenProvider1Rows = new Set();
+    /* When a rowSpan covers future rows, track the time keys to skip rendering new cells. */
+    const hiddenProvider1Rows = new Set(); /* keys like "07:30" */
     const hiddenProvider2Rows = new Set();
     
-    /* Loop through each hour 7 AM to 11 PM */
     for (let hour = 7; hour <= 23; hour++) {
-      /* Loop through each 5-min interval within hour */
       for (let min = 0; min <= 55; min+= 5) {
-
-        /* format the hour and minute as a string (HH:MM) */
         const time = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
         
         /* Cells <td> for this specific row */
+        /** @type {JSX.Element[]} */
         const rowCells = [];
-
-        /* 1. */
-        /* --- Left time column --- */
-        // rowCells.push(
-        //   <td key={`time-left-${time}`}
-        //       className="time-cell clickable"
-        //       onClick={() => handleTimeClick(time, 1)} /* Dr. Wong */
-        //   >
-        //     {time}
-        //   </td>
-        // );
 
         if (!hiddenProvider1Rows.has(time)) {
           rowCells.push(
@@ -444,25 +392,14 @@ function MainMenu() {
           if (appt) {
 
             /* Calculate how many 5-min rows this appt spans */
-            const spanLength = appt.duration_minutes / 5;
+            const spanLength = Math.max(1, Math.ceil(appt.duration_minutes / 5));
+            const startTotal = hour * 60 + min;
 
-            // hide the start…
-            // hiddenProvider1Rows.add(time);
-
-            /* Mark future timeslots covered by this appt as hidden, so not rendered in future */
             for (let i = 1; i < spanLength; i++) {
-              let futureMin = min + (i * 5);
-              // const futureHour = hour + Math.floor(futureMin / 60);
-              let futureHour = '';
-              if (futureMin === 60) {
-                futureHour = hour + 1;
-                futureMin = 0;
-              } else {
-                futureHour = hour;
-              }
-              const futureTime = `${futureHour.toString().padStart(2, '0')}:${futureMin.toString().padStart(2, '0')}`;
-              hiddenProvider1Rows.add(futureTime);
+              const futureKey = toKey(startTotal + i * 5);
+              hiddenProvider1Rows.add(futureKey);     // or hiddenProvider2Rows in the other column
             }
+
 
             /* Render a single <td> cell with rowSpan = span to cover multiple rows vertically */
             /* This cell shows appointment info and the folder icon for appt status change */
@@ -500,15 +437,6 @@ function MainMenu() {
           }
         }
         
-      // /* --- Right time column --- */
-      // rowCells.push(
-      //   <td key={`time-right-${time}`}
-      //       className="time-cell clickable"
-      //       onClick={() => handleTimeClick(time, 2)} /* Dr. Smith */
-      //   >
-      //     {time}
-      //   </td>
-      // );
 
       if (!hiddenProvider2Rows.has(time)) {
           rowCells.push(
@@ -539,24 +467,12 @@ function MainMenu() {
           if (appt) {
 
             /* Calculate how many 5-min rows this appt spans */
-            const spanLength = appt.duration_minutes / 5;
+            const spanLength = Math.max(1, Math.ceil(appt.duration_minutes / 5));
+            const startTotal = hour * 60 + min;
 
-            // hide the start…
-            // hiddenProvider2Rows.add(time);h
-
-            /* Mark future timeslots covered by this appt as hidden, so not rendered in future */
             for (let i = 1; i < spanLength; i++) {
-              let futureMin = min + (i * 5);
-              // const futureHour = hour + Math.floor(futureMin / 60);
-              let futureHour = '';
-              if (futureMin === 60) {
-                futureHour = hour + 1;
-                futureMin = 0;
-              } else {
-                futureHour = hour;
-              }
-              const futureTime = `${futureHour.toString().padStart(2, '0')}:${futureMin.toString().padStart(2, '0')}`;
-              hiddenProvider2Rows.add(futureTime);
+              const futureKey = toKey(startTotal + i * 5);
+              hiddenProvider2Rows.add(futureKey);     // or hiddenProvider2Rows in the other column
             }
 
             /* Render a single <td> cell with rowSpan = span to cover multiple rows vertically */
@@ -603,6 +519,10 @@ function MainMenu() {
     /* Return all the table generated rows */
     return rows;
   };  
+
+
+  /* === Render === */
+
 
   return (
     <div>
@@ -675,8 +595,3 @@ function MainMenu() {
 }
 
 export default MainMenu;
-
-
-
-
-
