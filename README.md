@@ -45,6 +45,17 @@ docker attach emr-frontend
 http://localhost:3000
 ```
 
+## Screenshots
+![Main menu](docs/images/main-menu.png)
+![Login page](docs/images/login-page.png)
+![Add appointment page](docs/images/add-appointment-page.png)
+![Edit appointment page](docs/images/edit-appointment-page.png)
+![Calendar popup](docs/images/calendar-popup.png)
+![Add demographic record page](docs/images/add-demographic-record-page.png)
+![Patient search page](docs/images/patient-search-page.png)
+![Master record page](docs/images/master-record.png)
+![Master record edit page](docs/images/master-record-edit-page.png)
+
 ## Documentation
 - [AppointmentFormPopup component](/docs/AppointmentFormPopup.md)
 - [SearchPage component](/docs/SearchPage.md)
@@ -56,6 +67,7 @@ http://localhost:3000
 - [MasterRecord component](/docs/MasterRecord.md)
 - [CreateDemographic component](/docs/CreateDemographic.md)
 - [Server component](/docs/Server.md)
+
 
 
 
