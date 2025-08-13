@@ -15,7 +15,7 @@
 | `MasterRecord.js`         | ✅         | ✅     |  ❌     |
 | `CreateDemographic.js`    | ✅         | ✅     |  ❌     |
 | `LoginPage.js`            | ✅         | ✅     |  ❌     |
-| `MainMenu.js`             | ❌         | ❌     |  ❌     |
+| `MainMenu.js`             | ✅         | ✅     |  ❌     |
 | `Navbar.js`               | ✅         | ✅     |  ❌     |
 | `SearchPage.js`           | ✅         | ✅     |  ❌     |
 | `App.js`                  | ✅         | ✅     |  ❌     |

@@ -19,7 +19,7 @@ FRONTEND
 
 6. LoginPage.js -> ✅ & ✅ & ❌ -> 142 Lines
 
-7. MainMenu.js -> ❌ & ❌ & ❌ -> 677 Lines
+7. MainMenu.js -> ✅ & ✅ & ❌ -> 677 Lines
 
 8. Navbar.js -> ✅ & ✅ & ❌ -> 77 Lines
 
