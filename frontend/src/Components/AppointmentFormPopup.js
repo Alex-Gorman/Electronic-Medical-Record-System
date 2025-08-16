@@ -363,13 +363,15 @@ function AppointmentFormPopup() {
             }
 
             alert(isEditMode ? 'Appointment updated' : 'Appointment booked');
-            if (window.opener) {
-                window.opener.postMessage({
-                type: 'appointment-added',
-                apptId, /* deleted id */
-                date: isoDate /* "YYYY-MM-DD" */
-                }, '*');
-            }
+            // if (window.opener) {
+            //     window.opener.postMessage({
+            //     type: 'appointment-added',
+            //     apptId, /* deleted id */
+            //     date: isoDate /* "YYYY-MM-DD" */
+            //     }, '*');
+            // }
+            window.opener?.postMessage(
+                { type: 'appointment-added', apptId: String(apptId), date: isoDate }, '*');
             window.close();
         } catch (err) {
             console.error('Save failed', err);
