@@ -126,8 +126,8 @@ All tests live under ```frontend/src/__tests__/``` and use React Testing Library
 ## 3. How to Run
 
 **Prerequisites**
-**Node.js** LTS (v18+ or v20 recommended) 
-**npm** (bundled with Node — you don’t install it separately)
+- **Node.js** LTS (v18+ or v20 recommended) 
+- **npm** (bundled with Node — you don’t install it separately)
 
 ```
 cd frontend
