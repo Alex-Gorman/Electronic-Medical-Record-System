@@ -1,49 +1,70 @@
-# 🏥 Electronic Medical Record System
+# 🏥 Electronic Medical Record (EMR) System
 
-A modern web-based Electronic Medical Record (EMR) system built with React and Docker. This system provides a structured and efficient interface for managing patient data and medical records.
+A modern web-based EMR prototype with appointment scheduling (conflict detection), patient master records, patient search, and role-based flows.
 
----
+## Features
+- Day view with providers & time grid
+- Add/Edit/Delete appointments (popup), appointment conflict checks, appointment status workflow
+- Patient Master Record (demographics), patient search
+- Component tests with React Testing Library + Jest
+- Dockerized dev environment
 
-## 🚀 How to Run the Project
+## Tech Stack
+React, React Router, RTL/Jest · Node/Express (API) · Docker Compose
 
-Follow the steps below to run the project locally using Docker.
+## 🚀 Quick Start
 
-### 📥 1. Clone the Repository
-
-Clone the repository using SSH:
+**Prerequisites**
+- **Docker & Docker Compose** (for the quick start).
+- (Optional) **Node.js LTS** (v18+ or v20) if you prefer running locally without Docker
 
 ```bash
 git clone git@github.com:Alex-Gorman/Electronic-Medical-Record-System.git
-```
-
-
-### 📁 2. Navigate to the Directory
-
-```bash
 cd Electronic-Medical-Record-System
-```
-
-
-### 🐳 3. Run the Application with Docker
-
-```bash
 docker compose up --build
 ```
 
-### 4. Open a New Terminal Window
-Open a new terminal window or tab so you can attach to the container while the app is running.
+## 🌐 Access the Application
+- Frontend: http://localhost:3000
+- API: http://localhost:3002
+
+**Demo Login**
+- Username: Admin
+- Password: Admin1234
 
 
-### 🔗 5. Attach to the Frontend Container
-
-```bash
-docker attach emr-frontend
+## Architecture
+```
+.
+├─ backend/        # Node/Express API (localhost:3002)
+├─ frontend/       # React app (localhost:3000)
+└─ docker-compose.yml
 ```
 
-### 🌐 6. Access the Application
+## Running Tests
+- **Node.js** LTS (v18+ or v20 recommended), if running locally without Docker.
+- **npm** (bundled with Node — you don’t install it separately)
+
 ```bash
-http://localhost:3000
+cd frontend
+
+# run once
+npm test
+
+# watch mode (recommended)
+npm run test:watch
+
+# coverage report (outputs coverage/ directory)
+npm run test:coverage
+
+# CI mode (no watch, silent logs)
+npm run test:ci
 ```
+
+---
+
+
+
 
 ## Screenshots
 
@@ -122,19 +143,5 @@ All tests live under ```frontend/src/__tests__/``` and use React Testing Library
 - [MasterRecord Test documentation](/docs/test_plans/MasterRecord.test.md)
 - [Navbar Test documentation](/docs/test_plans/Navbar.test.md)
 - [SearchPage Test documentation](/docs/test_plans/SearchPage.test.md)
-
-## 3. How to Run
-
-**Prerequisites**
-- **Node.js** LTS (v18+ or v20 recommended) 
-- **npm** (bundled with Node — you don’t install it separately)
-
-```
-cd frontend
-npm test
-```
-
-
-
 
 
