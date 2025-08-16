@@ -372,6 +372,8 @@ function AppointmentFormPopup() {
             // }
             window.opener?.postMessage(
                 { type: 'appointment-added', apptId: String(apptId), date: isoDate }, '*');
+
+            setTimeout(() => window.close(), 2);
             window.close();
         } catch (err) {
             console.error('Save failed', err);
@@ -379,76 +381,48 @@ function AppointmentFormPopup() {
         }
     }; 
 
-    async function handleDeleteAppointment() {
+
+
+    /**
+     * Delete the current appointment (edit mode). Notifies opener and closes.
+     */
+    const handleDeleteAppointment = async() => {
         try {
-            // Optional confirm guard
-            if (typeof window.confirm === 'function' && !window.confirm('Delete this appointment?')) {
-                return;
-            }
+            const response = await fetch(`http://localhost:3002/appointments/${apptId}`, {
+                method: 'DELETE',
+                headers: {
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id : apptId})
+            });
 
-            const res = await fetch(`http://localhost:3002/appointments/${apptId}`, { method: 'DELETE' });
+            const result = await response.json();
 
-            // Don’t parse JSON on 204; just check ok
-            if (!res.ok) {
-                const txt = await res.text().catch(() => '');
-                console.error('DELETE failed:', res.status, txt);
+            if (!response.ok) {
+                console.error(result.error);
                 alert('Failed to delete appointment');
-                return;
+            } else {
+                console.log('Deleted appointment');
             }
 
-            // Make sure both apptId and date are included
-            window.opener?.postMessage(
-                { type: 'appointment-deleted', apptId: String(apptId), date: isoDate },
-                '*'
-                );
+            /* Notify the parent window of sucessful deletion */
+            if (window.opener) {
+                window.opener.postMessage({
+                type: 'appointment-deleted',
+                apptId, /* deleted id */
+                date: isoDate /* "YYYY-MM-DD" */
+                }, '*');
+            }
+
+            /* Close the popup window */
+            setTimeout(() => window.close(), 2);
             window.close();
-        } catch (e) {
-            console.error('Delete error:', e);
-            alert('Failed to delete appointment');
+
+        } catch (error) {
+            console.error('Error deleting appointment:', error);
+            alert('Error deleting appointment');
         }
     }
-
-
-
-    // /**
-    //  * Delete the current appointment (edit mode). Notifies opener and closes.
-    //  */
-    // const handleDeleteAppointment = async() => {
-    //     try {
-    //         const response = await fetch(`http://localhost:3002/appointments/${apptId}`, {
-    //             method: 'DELETE',
-    //             headers: {
-    //             'Content-Type': 'application/json'
-    //             },
-    //             body: JSON.stringify({ id : apptId})
-    //         });
-
-    //         const result = await response.json();
-
-    //         if (!response.ok) {
-    //             console.error(result.error);
-    //             alert('Failed to delete appointment');
-    //         } else {
-    //             console.log('Deleted appointment');
-    //         }
-
-    //         /* Notify the parent window of sucessful deletion */
-    //         if (window.opener) {
-    //             window.opener.postMessage({
-    //             type: 'appointment-deleted',
-    //             apptId, /* deleted id */
-    //             date: isoDate /* "YYYY-MM-DD" */
-    //             }, '*');
-    //         }
-
-    //         /* Close the popup window */
-    //         window.close();
-
-    //     } catch (error) {
-    //         console.error('Error deleting appointment:', error);
-    //         alert('Error deleting appointment');
-    //     }
-    // }
 
 
     /* === Render === */
