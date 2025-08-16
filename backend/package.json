@@ -10,7 +10,7 @@
     "eslint-plugin-react": "^7.37.5"
   },
   "scripts": {
-    "lint": "eslint --config .eslintrc.cjs .",
-    "test": "echo \"No backend tests yet\" && exit 0"
-  }
+     "lint": "eslint --config .eslintrc.cjs .",
+     "test": "echo \"No backend tests yet\" && exit 0"
+   }
 }
