@@ -12,5 +12,6 @@
   "scripts": {
      "lint": "eslint --config .eslintrc.cjs .",
      "test": "echo \"No backend tests yet\" && exit 0"
-   }
+   },
+   "license": "MIT"
 }
