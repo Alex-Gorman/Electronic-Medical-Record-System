@@ -396,8 +396,10 @@ function AppointmentFormPopup() {
                 body: JSON.stringify({ id : apptId})
             });
 
+
             const result = await response.json();
 
+            
             if (!response.ok) {
                 console.error(result.error);
                 alert('Failed to delete appointment');
