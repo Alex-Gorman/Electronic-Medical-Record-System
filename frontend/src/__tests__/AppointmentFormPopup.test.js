@@ -353,6 +353,7 @@ Object.defineProperty(window, 'opener', {
 jest.spyOn(window, 'confirm').mockReturnValue(true);
 
 
+
 /**
  * T7 —  Successful delete
  * Try deleting an appointment and gets deleted
