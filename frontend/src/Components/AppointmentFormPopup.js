@@ -377,46 +377,76 @@ function AppointmentFormPopup() {
         }
     }; 
 
-
-    /**
-     * Delete the current appointment (edit mode). Notifies opener and closes.
-     */
-    const handleDeleteAppointment = async() => {
+    async function handleDeleteAppointment() {
         try {
-            const response = await fetch(`http://localhost:3002/appointments/${apptId}`, {
-                method: 'DELETE',
-                headers: {
-                'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ id : apptId})
-            });
+            // Optional confirm guard
+            if (typeof window.confirm === 'function' && !window.confirm('Delete this appointment?')) {
+                return;
+            }
 
-            const result = await response.json();
+            const res = await fetch(`http://localhost:3002/appointments/${apptId}`, { method: 'DELETE' });
 
-            if (!response.ok) {
-                console.error(result.error);
+            // Don’t parse JSON on 204; just check ok
+            if (!res.ok) {
+                const txt = await res.text().catch(() => '');
+                console.error('DELETE failed:', res.status, txt);
                 alert('Failed to delete appointment');
-            } else {
-                console.log('Deleted appointment');
+                return;
             }
 
-            /* Notify the parent window of sucessful deletion */
-            if (window.opener) {
-                window.opener.postMessage({
-                type: 'appointment-deleted',
-                apptId, /* deleted id */
-                date: isoDate /* "YYYY-MM-DD" */
-                }, '*');
-            }
-
-            /* Close the popup window */
+            // Make sure both apptId and date are included
+            window.opener?.postMessage(
+                { type: 'appointment-deleted', apptId: String(apptId), date: isoDate },
+                '*'
+                );
             window.close();
-
-        } catch (error) {
-            console.error('Error deleting appointment:', error);
-            alert('Error deleting appointment');
+        } catch (e) {
+            console.error('Delete error:', e);
+            alert('Failed to delete appointment');
         }
     }
+
+
+
+    // /**
+    //  * Delete the current appointment (edit mode). Notifies opener and closes.
+    //  */
+    // const handleDeleteAppointment = async() => {
+    //     try {
+    //         const response = await fetch(`http://localhost:3002/appointments/${apptId}`, {
+    //             method: 'DELETE',
+    //             headers: {
+    //             'Content-Type': 'application/json'
+    //             },
+    //             body: JSON.stringify({ id : apptId})
+    //         });
+
+    //         const result = await response.json();
+
+    //         if (!response.ok) {
+    //             console.error(result.error);
+    //             alert('Failed to delete appointment');
+    //         } else {
+    //             console.log('Deleted appointment');
+    //         }
+
+    //         /* Notify the parent window of sucessful deletion */
+    //         if (window.opener) {
+    //             window.opener.postMessage({
+    //             type: 'appointment-deleted',
+    //             apptId, /* deleted id */
+    //             date: isoDate /* "YYYY-MM-DD" */
+    //             }, '*');
+    //         }
+
+    //         /* Close the popup window */
+    //         window.close();
+
+    //     } catch (error) {
+    //         console.error('Error deleting appointment:', error);
+    //         alert('Error deleting appointment');
+    //     }
+    // }
 
 
     /* === Render === */
