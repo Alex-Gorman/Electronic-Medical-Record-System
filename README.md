@@ -1,3 +1,5 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 # 🏥 Electronic Medical Record (EMR) System
 
 A modern web-based EMR prototype with appointment scheduling (conflict detection), patient master records, patient search, and role-based flows.
