@@ -406,13 +406,17 @@ function AppointmentFormPopup() {
             }
 
             /* Notify the parent window of sucessful deletion */
-            if (window.opener) {
-                window.opener.postMessage({
-                type: 'appointment-deleted',
-                apptId, /* deleted id */
-                date: isoDate /* "YYYY-MM-DD" */
-                }, '*');
-            }
+            window.opener?.postMessage(
+            { type: 'appointment-deleted', apptId: String(apptId), date: isoDate },
+                '*'
+            );
+            // if (window.opener) {
+            //     window.opener.postMessage({
+            //     type: 'appointment-deleted',
+            //     apptId, /* deleted id */
+            //     date: isoDate /* "YYYY-MM-DD" */
+            //     }, '*');
+            // }
 
             /* Close the popup window */
             setTimeout(() => window.close(), 2);

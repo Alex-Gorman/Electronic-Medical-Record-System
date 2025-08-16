@@ -340,6 +340,18 @@ test('T6: edit mode saves via PUT /appointments/:id', async () => {
   closeSpy.mockRestore();
 });
 
+const postMessageSpy = jest.fn();
+
+// Make sure opener exists and is writable/configurable
+Object.defineProperty(window, 'opener', {
+  value: { postMessage: postMessageSpy },
+  writable: true,
+  configurable: true,
+});
+
+// (optional) If your delete handler ever asks for confirmation
+jest.spyOn(window, 'confirm').mockReturnValue(true);
+
 
 /**
  * T7 —  Successful delete
