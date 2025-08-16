@@ -429,23 +429,26 @@ function AppointmentFormPopup() {
                 <div className="appointment-form form-grid">
                 {/* Left Column */}
                 <div className="form-left">
-                    <label>Date:</label>
+                    <label htmlFor="appt-date">Date:</label>
                     <input 
+                        id="appt-date"
                         type="date"
                         value={isoDate}
                         disabled
                     />
 
-                    <label>Start Time:</label>
+                    <label htmlFor="appt-start-time">Start Time:</label>
                     <input
+                    id="appt-start-time"
                     type="time"
                     step="300"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     />
 
-                    <label>Duration (min):</label>
+                    <label htmlFor="appt-duration">Duration (min):</label>
                     <input
+                        id="appt-duration"
                         type="number"
                         min={5}
                         step={5}
@@ -465,8 +468,9 @@ function AppointmentFormPopup() {
                         placeholder="15"
                     />
 
-                    <label>Name:</label>
+                    <label htmlFor="appt-name">Name:</label>
                     <input
+                        id="appt-name"
                         type="text"
                         value={selectedPatient ? `${selectedPatient.lastname}, ${selectedPatient.firstname}` : nameInput}
                         onFocus={() => setSelectedPatient(null)} /* <- clear so value switches to nameInput */
@@ -478,8 +482,9 @@ function AppointmentFormPopup() {
                     />
 
 
-                    <label>Reason:</label>
+                    <label htmlFor="appt-reason">Reason:</label>
                     <textarea
+                    id="appt-reason"
                     value={appointmentReason}
                     onChange={(e) => setAppointmentReason(e.target.value)}
                     />
@@ -487,8 +492,9 @@ function AppointmentFormPopup() {
 
                 {/* Right Column */}
                 <div className="form-right">
-                    <label>Status:</label>
+                    <label htmlFor="appt-status">Status:</label>
                     <select
+                        id="appt-status"
                         value={backendToUILabel[appointmentStatus] || 'To Do'}
                         onChange={(e) => {
                             const ui = e.target.value;
