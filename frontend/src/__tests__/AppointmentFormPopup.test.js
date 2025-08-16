@@ -330,7 +330,7 @@ test('T6: edit mode saves via PUT /appointments/:id', async () => {
   await waitFor(() => {
     expect(alertSpy).toHaveBeenCalledWith('Appointment updated');
     expect(postMessageSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'appointment-added', date: '2025-08-04' }),
+      expect.objectContaining({ type: 'appointment-added', apptId: '42', date: '2025-08-04' }),
       '*'
     );
     expect(closeSpy).toHaveBeenCalled();
