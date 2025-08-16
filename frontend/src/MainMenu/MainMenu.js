@@ -19,7 +19,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './MainMenu.css';
-import AppointmentFormPopup from '../Components/AppointmentFormPopup';
+// import AppointmentFormPopup from '../Components/AppointmentFormPopup';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -220,10 +220,10 @@ function MainMenu() {
   const handleToday = () => setCurrentDate(new Date()); 
 
 
-  /* Toggle inline calendar (not the popup calendar window) */
-  const handleCalendarToggle = () => {
-    setShowCalendar(open => !open);
-  };
+  // /* Toggle inline calendar (not the popup calendar window) */
+  // const handleCalendarToggle = () => {
+  //   setShowCalendar(open => !open);
+  // };
 
 
   /* Open standalone calendar popup window */
