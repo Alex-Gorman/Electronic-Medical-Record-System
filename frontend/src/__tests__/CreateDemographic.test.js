@@ -16,6 +16,11 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
+const waitForDoctorsToLoad = async () => {
+  /* wait until at least one doctor option has been rendered */
+  await screen.findByRole('option', { name: /Dr\./i });
+};
+
 /**
  * T1 — Loads doctors on mount and populates Family Physician select
  *
@@ -86,6 +91,8 @@ test('T2: Successful submit with minimal required fields posts payload and shows
 
   render(<CreateDemographic />);
 
+  await waitForDoctorsToLoad();
+
   /* Fill minimal required fields */
   await userEvent.type(byName('firstname'), 'John');
   await userEvent.type(byName('lastname'), 'Doe');
@@ -145,6 +152,8 @@ test('T3: Submits with optional fields populated (phones, postal code, OHIP, sta
     .mockResolvedValueOnce({ ok: true, text: async () => '' }); /* POST ok with empty body */
 
   render(<CreateDemographic />);
+
+  await waitForDoctorsToLoad();
 
   /* Required */
   await userEvent.type(byName('firstname'), 'Alice');
@@ -224,6 +233,8 @@ test('T4: POST /patients failure alerts with status + text and does not show suc
 
   render(<CreateDemographic />);
 
+  await waitForDoctorsToLoad();
+
   /* Minimal required */
   await userEvent.type(byName('firstname'), 'John');
   await userEvent.type(byName('lastname'), 'Doe');
@@ -265,6 +276,8 @@ test('T5: network/parse error during submit shows generic alert', async () => {
 
   render(<CreateDemographic />);
 
+  await waitForDoctorsToLoad();
+
   await userEvent.type(byName('firstname'), 'John');
   await userEvent.type(byName('lastname'), 'Doe');
   await userEvent.selectOptions(bySelect('province'), 'Ontario');
@@ -299,6 +312,8 @@ test('T6: required attributes are present on key fields', async () => {
   global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ['Dr. Who'] });
   render(<CreateDemographic />);
 
+  await waitForDoctorsToLoad();
+
   expect(byName('firstname')).toHaveAttribute('required');
   expect(byName('lastname')).toHaveAttribute('required');
   expect(bySelect('province')).toHaveAttribute('required');
@@ -326,6 +341,8 @@ test('T6: required attributes are present on key fields', async () => {
 test('T7: pattern attributes exist for constrained fields (postal code, phones, OHIP, version code)', async () => {
   global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ['Dr. Who'] });
   render(<CreateDemographic />);
+
+  await waitForDoctorsToLoad();
 
   expect(byName('postalcode')).toHaveAttribute('pattern', '^[A-Za-z]\\d[A-Za-z] \\d[A-Za-z]\\d$');
   expect(byName('homephone')).toHaveAttribute('pattern', '^\\d{10}$');
