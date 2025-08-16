@@ -105,9 +105,34 @@ http://localhost:3000
 - [CreateDemographic component](/docs/CreateDemographic.md)
 - [Server component](/docs/Server.md)
 
+---
 
+# Testing
 
+## 1. Test Suite Overview
 
+All tests live under ```frontend/src/__tests__/``` and use React Testing Library + Jest with the JSDOM environment.
+
+## 2. Test Documentation (Specs)
+
+- [AppointmentFormPopup Test documentation](/docs/test_plans/AppointmentFormPopup.test.md)
+- [CreateDemographic Test documentation](/docs/test_plans/CreateDemographic.test.md)
+- [LoginPage Test documentation](/docs/test_plans/LoginPage.test.md)
+- [MainMenu Test documentation](/docs/test_plans/MainMenu.test.md)
+- [MasterRecord Test documentation](/docs/test_plans/MasterRecord.test.md)
+- [Navbar Test documentation](/docs/test_plans/Navbar.test.md)
+- [SearchPage Test documentation](/docs/test_plans/SearchPage.test.md)
+
+## 3. How to Run
+
+**Prerequisites**
+**Node.js** LTS (v18+ or v20 recommended) 
+**npm** (bundled with Node — you don’t install it separately)
+
+```
+cd frontend
+npm test
+```
 
 
 
