@@ -68,24 +68,21 @@ npm run test:ci
 
 
 
-## Screenshots
+## EMR UI Screenshots
 
-### EMR UI Screenshots
+|  |  |
+|---|---|
+| <img src="docs/images/add-appointment-page.png" width="460" alt="Add appointment page"> | <img src="docs/images/add-demographic-record-page.png" width="460" alt="Add demographic record page"> |
+| **Add appointment page** | **Add demographic record page** |
+| <img src="docs/images/calendar-popup.png" width="460" alt="Calendar popup"> | <img src="docs/images/edit-appointment-page.png" width="460" alt="Edit appointment page"> |
+| **Calendar popup** | **Edit appointment** |
+| <img src="docs/images/login-page.png" width="460" alt="Login page"> | <img src="docs/images/main-menu.png" width="460" alt="Main menu"> |
+| **Login** | **Main menu** |
+| <img src="docs/images/master-record.png" width="460" alt="Master record view"> | <img src="docs/images/master-record-edit-page.png" width="460" alt="Edit master record page"> |
+| **Master record** | **Edit master record** |
+| <img src="docs/images/patient-search-page.png" width="460" alt="Patient search page"> |  |
+| **Patient search** |  |
 
-| Add Appointment | Add Demographic Record | Calendar Popup |
-|---|---|---|
-| <img src="docs/images/add-appointment-page.png" width="280" alt="Add appointment page"> | <img src="docs/images/add-demographic-record-page.png" width="280" alt="Add demographic record page"> | <img src="docs/images/calendar-popup.png" width="280" alt="Calendar popup"> |
-| **Add appointment page** | **Add demographic record page** | **Calendar popup** |
-
-| Edit Appointment | Login | Main Menu |
-|---|---|---|
-| <img src="docs/images/edit-appointment-page.png" width="280" alt="Edit appointment page"> | <img src="docs/images/login-page.png" width="280" alt="Login page"> | <img src="docs/images/main-menu.png" width="280" alt="Main menu"> |
-| **Edit appointment** | **Login** | **Main menu** |
-
-| Master Record | Edit Master Record | Patient Search |
-|---|---|---|
-| <img src="docs/images/master-record.png" width="280" alt="Master record view"> | <img src="docs/images/master-record-edit-page.png" width="280" alt="Edit master record page"> | <img src="docs/images/patient-search-page.png" width="280" alt="Patient search page"> |
-| **Master record** | **Edit master record** | **Patient search** |
 
 
 ---
