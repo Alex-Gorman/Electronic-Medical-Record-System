@@ -63,8 +63,6 @@ npm run test:coverage
 npm run test:ci
 ```
 
----
-
 
 ## EMR UI Screenshots
 
@@ -89,8 +87,6 @@ npm run test:ci
 | <img src="docs/images/master-record.png" width="520" alt="Master record view"> | <img src="docs/images/master-record-edit-page.png" width="520" alt="Edit master record page"> |
 
 
----
-
 
 ## Documentation
 - [AppointmentFormPopup component](/docs/AppointmentFormPopup.md)
@@ -104,7 +100,6 @@ npm run test:ci
 - [CreateDemographic component](/docs/CreateDemographic.md)
 - [Server component](/docs/Server.md)
 
----
 
 # Testing
 
