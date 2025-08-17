@@ -70,18 +70,16 @@ npm run test:ci
 
 ## EMR UI Screenshots
 
+### EMR UI Screenshots (2-column, labels on top)
+
 |  |  |
 |---|---|
-| <img src="docs/images/add-appointment-page.png" width="460" alt="Add appointment page"> | <img src="docs/images/add-demographic-record-page.png" width="460" alt="Add demographic record page"> |
-| **Add appointment page** | **Add demographic record page** |
-| <img src="docs/images/calendar-popup.png" width="460" alt="Calendar popup"> | <img src="docs/images/edit-appointment-page.png" width="460" alt="Edit appointment page"> |
-| **Calendar popup** | **Edit appointment** |
-| <img src="docs/images/login-page.png" width="460" alt="Login page"> | <img src="docs/images/main-menu.png" width="460" alt="Main menu"> |
-| **Login** | **Main menu** |
-| <img src="docs/images/master-record.png" width="460" alt="Master record view"> | <img src="docs/images/master-record-edit-page.png" width="460" alt="Edit master record page"> |
-| **Master record** | **Edit master record** |
-| <img src="docs/images/patient-search-page.png" width="460" alt="Patient search page"> |  |
-| **Patient search** |  |
+| <div align="center"><strong>Add appointment page</strong><br><img src="docs/images/add-appointment-page.png" width="460" alt="Add appointment page"></div> | <div align="center"><strong>Add demographic record page</strong><br><img src="docs/images/add-demographic-record-page.png" width="460" alt="Add demographic record page"></div> |
+| <div align="center"><strong>Calendar popup</strong><br><img src="docs/images/calendar-popup.png" width="460" alt="Calendar popup"></div> | <div align="center"><strong>Edit appointment</strong><br><img src="docs/images/edit-appointment-page.png" width="460" alt="Edit appointment page"></div> |
+| <div align="center"><strong>Login</strong><br><img src="docs/images/login-page.png" width="460" alt="Login page"></div> | <div align="center"><strong>Main menu</strong><br><img src="docs/images/main-menu.png" width="460" alt="Main menu"></div> |
+| <div align="center"><strong>Master record</strong><br><img src="docs/images/master-record.png" width="460" alt="Master record view"></div> | <div align="center"><strong>Edit master record</strong><br><img src="docs/images/master-record-edit-page.png" width="460" alt="Edit master record page"></div> |
+| <div align="center"><strong>Patient search</strong><br><img src="docs/images/patient-search-page.png" width="460" alt="Patient search page"></div> |  |
+
 
 
 
