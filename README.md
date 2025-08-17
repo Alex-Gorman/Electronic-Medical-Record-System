@@ -74,17 +74,17 @@ npm run test:ci
 
 | Add Appointment | Add Demographic Record | Calendar Popup |
 |---|---|---|
-| <img src="images/add-appointment-page.png" width="280" alt="Add appointment page"> | <img src="images/add-demographic-record-page.png" width="280" alt="Add demographic record page"> | <img src="images/calendar-popup.png" width="280" alt="Calendar popup"> |
+| <img src="docs/images/add-appointment-page.png" width="280" alt="Add appointment page"> | <img src="docs/images/add-demographic-record-page.png" width="280" alt="Add demographic record page"> | <img src="docs/images/calendar-popup.png" width="280" alt="Calendar popup"> |
 | **Add appointment page** | **Add demographic record page** | **Calendar popup** |
 
 | Edit Appointment | Login | Main Menu |
 |---|---|---|
-| <img src="images/edit-appointment-page.png" width="280" alt="Edit appointment page"> | <img src="images/login-page.png" width="280" alt="Login page"> | <img src="images/main-menu.png" width="280" alt="Main menu"> |
+| <img src="docs/images/edit-appointment-page.png" width="280" alt="Edit appointment page"> | <img src="docs/images/login-page.png" width="280" alt="Login page"> | <img src="docs/images/main-menu.png" width="280" alt="Main menu"> |
 | **Edit appointment** | **Login** | **Main menu** |
 
 | Master Record | Edit Master Record | Patient Search |
 |---|---|---|
-| <img src="images/master-record.png" width="280" alt="Master record view"> | <img src="images/master-record-edit-page.png" width="280" alt="Edit master record page"> | <img src="images/patient-search-page.png" width="280" alt="Patient search page"> |
+| <img src="docs/images/master-record.png" width="280" alt="Master record view"> | <img src="docs/images/master-record-edit-page.png" width="280" alt="Edit master record page"> | <img src="docs/images/patient-search-page.png" width="280" alt="Patient search page"> |
 | **Master record** | **Edit master record** | **Patient search** |
 
 
