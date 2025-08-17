@@ -66,32 +66,7 @@ npm run test:ci
 ---
 
 
-
-
 ## EMR UI Screenshots
-
-| Main Menu |  |
-|---|---|
-| <img src="docs/images/main-menu.png" width="1040" alt="Main menu wide"> |  |
-
-| Add Appointment | Add Demographic Record |
-|---|---|
-| <img src="docs/images/add-appointment-page.png" width="520" alt="Add appointment page"> | <img src="docs/images/add-demographic-record-page.png" width="520" alt="Add demographic record page"> |
-
-| Calendar Popup | Edit Appointment |
-|---|---|
-| <img src="docs/images/calendar-popup.png" width="520" alt="Calendar popup"> | <img src="docs/images/edit-appointment-page.png" width="520" alt="Edit appointment page"> |
-
-| Login | Patient Search |
-|---|---|
-| <img src="docs/images/login-page.png" width="520" alt="Login page"> | <img src="docs/images/patient-search-page.png" width="520" alt="Patient search page"> |
-
-| Master Record | Edit Master Record |
-|---|---|
-| <img src="docs/images/master-record.png" width="520" alt="Master record view"> | <img src="docs/images/master-record-edit-page.png" width="520" alt="Edit master record page"> |
-
-
-
 
 | Main Menu |  |
 |---|---|
@@ -112,6 +87,10 @@ npm run test:ci
 | Master Record | Edit Master Record |
 |---|---|
 | <img src="docs/images/master-record.png" width="520" alt="Master record view"> | <img src="docs/images/master-record-edit-page.png" width="520" alt="Edit master record page"> |
+
+| Edit Appointment | |
+|---|---|
+| <img src="docs/images/edit-appointment-page.png" width="520" alt="Edit appointment page"> |  |
 
 
 
